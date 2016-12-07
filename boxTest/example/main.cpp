@@ -38,6 +38,7 @@ class PhysicBox : public sf::Drawable
             {
                 _bodyDef.type = b2_staticBody;
             }
+            _bodyDef.fixedRotation = true;
 
             if (_body)
             {
@@ -49,7 +50,7 @@ class PhysicBox : public sf::Drawable
             {
                 _fixture.density = density;
                 _fixture.friction = friction;
-                _fixture.restitution = 1.0f;
+                _fixture.restitution = 0.2f;
                 _fixture.shape = &_bodyShape;
                 _body->CreateFixture(&_fixture);
             }
