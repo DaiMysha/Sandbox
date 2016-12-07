@@ -15,10 +15,8 @@ include(cmake/macro.cmake)
 
 set(LIBS "")
 
-set(DEFINES "")
-set(WARNING "-Wall")
-set(FLAGS "-g -std=c++11")
-set(CMAKE_CXX_FLAGS "${DEFINES} ${WARNING} ${FLAGS}")
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib)
@@ -48,8 +46,7 @@ find_package(BOX2D REQUIRED)
 
 include_directories(${SFML_INCLUDE_DIR})
 include_directories(${Box2D_INCLUDE_DIR})
-message(${Box2D_LIBRARY})
-message(${SFML_LIBRARIES})
+
 list(APPEND LIBS
 	${LIBS}
 	${SFML_LIBRARIES}
