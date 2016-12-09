@@ -9,6 +9,12 @@
 
 const double PI = 3.14159265359;
 
+std::ostream& operator<<(std::ostream& out, const sf::Vector2f& v)
+{
+    out << v.x << "," << v.y;
+    return out;
+}
+
 void drawBox(sf::RenderTarget& window, const sf::RectangleShape& box)
 {
     sf::Vertex points[5];
@@ -64,6 +70,11 @@ class Axis : public sf::Drawable
             color = c;
         }
 
+        bool operator!=(const Axis& o) const
+        {
+            return origin != o.origin || direction != o.direction;
+        }
+
         sf::Vector2f origin;
         sf::Vector2f direction;
         sf::Color color;
@@ -113,6 +124,65 @@ class Segment : public sf::Drawable
         virtual void draw(sf::RenderTarget& target, sf::RenderStates states) const override;
 };
 
+class ProjectedSegment
+{
+    public:
+        ProjectedSegment(const Axis& a = Axis(), float mn = 0.0f, float mx = 0.0f, const sf::Color& c = sf::Color::Black)
+        {
+            axis = a;
+            mini = mn;
+            maxi = mx;
+            color = c;
+        }
+
+        operator Segment() const
+        {
+            sf::Vector2f med(axis.origin.x, 0);
+            return Segment(axis.origin + mini * axis.direction - med, axis.origin + maxi * axis.direction - med, color);
+        }
+
+        ProjectedSegment collides(const ProjectedSegment& other)
+        {
+
+            float x1 = 0.0, x2 = 0.0f;
+            if (other.axis != axis || mini > other.maxi || other.mini > maxi)
+            {
+                return ProjectedSegment();
+            }
+            std::cout << "Axis : " << axis.origin << " > " << axis.direction << std::endl;
+            std::cout << mini << ">" << maxi
+                << " ; "
+                << other.mini << ">" << other.maxi
+                << std::endl;
+
+            if (mini < other.maxi)
+            {
+                x1 = mini;
+                x2 = other.maxi;
+            }
+
+            if (other.mini < maxi)
+            {
+                x1 = other.mini;
+                x2 = maxi;
+            }
+
+            if (x1 != 0.0f && x2 != 0.0f)
+            {
+                return ProjectedSegment(axis, x1, x2, sf::Color::White);
+            }
+
+            return ProjectedSegment();
+        }
+
+        Axis axis;
+        float mini;
+        float maxi;
+        sf::Color color;
+
+    protected:
+};
+
 void calcNormals(std::array<sf::RectangleShape, 2>& boxes, std::array<Axis, 4>& normals)
 {
 
@@ -125,7 +195,7 @@ void calcNormals(std::array<sf::RectangleShape, 2>& boxes, std::array<Axis, 4>& 
             s.color.g /= colorReduction;
             s.color.b /= colorReduction;
             normals[0] = s.getNormal();
-            normals[0].origin -= s.getDirection();
+            //normals[0].origin -= s.getDirection();
         }
         {
             Segment s(t.transformPoint(boxes[0].getPoint(1)), t.transformPoint(boxes[0].getPoint(2)), boxes[0].getFillColor());
@@ -133,7 +203,7 @@ void calcNormals(std::array<sf::RectangleShape, 2>& boxes, std::array<Axis, 4>& 
             s.color.g /= colorReduction;
             s.color.b /= colorReduction;
             normals[1] = s.getNormal();
-            normals[1].origin -= s.getDirection();
+            //normals[1].origin -= s.getDirection();
         }
     }
 
@@ -145,7 +215,7 @@ void calcNormals(std::array<sf::RectangleShape, 2>& boxes, std::array<Axis, 4>& 
             s.color.g /= colorReduction;
             s.color.b /= colorReduction;
             normals[2] = s.getNormal();
-            normals[2].origin += s.getDirection();
+            //normals[2].origin += s.getDirection();
         }
         {
             Segment s(t.transformPoint(boxes[1].getPoint(1)), t.transformPoint(boxes[1].getPoint(2)), boxes[1].getFillColor());
@@ -153,7 +223,7 @@ void calcNormals(std::array<sf::RectangleShape, 2>& boxes, std::array<Axis, 4>& 
             s.color.g /= colorReduction;
             s.color.b /= colorReduction;
             normals[3] = s.getNormal();
-            normals[3].origin += s.getDirection();
+            //normals[3].origin += s.getDirection();
         }
     }
 }
@@ -161,17 +231,18 @@ void calcNormals(std::array<sf::RectangleShape, 2>& boxes, std::array<Axis, 4>& 
 //returns distance from axis center to point
 float project(const sf::Vector2f& v, const Axis& axis)
 {
-
-    return dot((v-axis.origin), axis.direction);
+    return dot((v), axis.direction);
 }
 
-Segment project(const sf::RectangleShape& box, const Axis& axis)
+ProjectedSegment project(const sf::RectangleShape& box, const Axis& axis)
 {
+    //std::cout << "Axis : " << axis.origin << ">" << axis.direction << std::endl;
     const sf::Transform& t = box.getTransform();
     std::array<float, 4> projections;
     for (size_t i = 0; i < 4; ++i)
     {
         projections[i] = project(t.transformPoint(box.getPoint(i)), axis);
+        //std::cout << "projections[" << t.transformPoint(box.getPoint(i)) << "] = " << projections[i] << std::endl;
     }
 
     float mini = projections[0], maxi = projections[0];
@@ -187,10 +258,12 @@ Segment project(const sf::RectangleShape& box, const Axis& axis)
         }
     }
 
-    return Segment(axis.origin + mini * axis.direction, axis.origin + maxi * axis.direction, sf::Color::White);
+    //std::cout << "***********" << std::endl;
+
+    return ProjectedSegment(axis, mini, maxi, sf::Color::White);
 }
 
-void calcProjections(std::array<Segment, 8>& projections, const std::array<sf::RectangleShape, 2>& boxes, const std::array<Axis, 4>& normals)
+void calcProjections(std::array<ProjectedSegment, 8>& projections, const std::array<sf::RectangleShape, 2>& boxes, const std::array<Axis, 4>& normals)
 {
     for (size_t b = 0; b < boxes.size(); ++b)
     {
@@ -213,7 +286,7 @@ int main(int argc, char** argv)
     boxes[0].setFillColor(sf::Color::Blue);
     boxes[0].setPosition(150, 150);
     boxes[0].setSize({ 150, 50 });
-    boxes[0].setRotation(30);
+    //boxes[0].setRotation(30);
 
     boxes[1].setFillColor(sf::Color::Red);
     boxes[1].setPosition(300, 250);
@@ -233,7 +306,9 @@ int main(int argc, char** argv)
 
     //SAT related stuff
     std::array<Axis, 4> normals;
-    std::array<Segment, 8> projections;
+    std::array<ProjectedSegment, 8> projections;
+    ProjectedSegment collision;
+    collision.color = sf::Color::White;
 
     calcNormals(boxes, normals);
     calcProjections(projections, boxes, normals);
@@ -307,6 +382,7 @@ int main(int argc, char** argv)
                     }
                     calcNormals(boxes, normals);
                     calcProjections(projections, boxes, normals);
+                    collision = projections[1].collides(projections[5]);
                 }
             }
         }
@@ -322,8 +398,9 @@ int main(int argc, char** argv)
         }
         for (size_t i = 0; i < projections.size(); ++i)
         {
-            window.draw(projections[i]);
+            window.draw((Segment)projections[i]);
         }
+        window.draw((Segment)collision);
         window.display();
 
         sf::sleep(sf::milliseconds(16));
