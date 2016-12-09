@@ -45,6 +45,14 @@ sf::Vector2<T> normalize(const sf::Vector2<T>& vec)
 class Axis : public sf::Drawable
 {
     public:
+
+        Axis(const sf::Vector2f& o = { 0, 0 }, const sf::Vector2f& d = { 0, 0 }, const sf::Color& c = sf::Color::Black)
+        {
+            origin = o;
+            direction = d;
+            color = c;
+        }
+
         sf::Vector2f origin;
         sf::Vector2f direction;
         sf::Color color;
@@ -59,19 +67,74 @@ class Segment : public sf::Drawable
         std::array<sf::Vector2f,2> points;
         sf::Color color;
 
+        Segment(const sf::Vector2f& a = { 0, 0 }, const sf::Vector2f& b = { 0, 0 }, const sf::Color& c = sf::Color::Black)
+        {
+            points[0] = a;
+            points[1] = b;
+            color = c;
+        }
+
         Axis getNormal()
         {
             sf::Vector2f d = points[1] - points[0];
             Axis a;
             a.origin = points[0] + d / 2.0f;
             a.direction = normalize(sf::Vector2f(d.y, -d.x));
-
+            a.color = color;
             return a;
+        }
+
+        sf::Vector2f getDirection()
+        {
+            return points[1] - points[0];
         }
 
     protected:
         virtual void draw(sf::RenderTarget& target, sf::RenderStates states) const override;
 };
+
+void calcNormals(std::array<sf::RectangleShape, 2>& boxes, std::array<Axis, 4>& normals)
+{
+    {
+        sf::Transform t = boxes[0].getTransform();
+        {
+            Segment s(t.transformPoint(boxes[0].getPoint(0)), t.transformPoint(boxes[0].getPoint(1)), boxes[0].getFillColor());
+            s.color.r *= 0.5f;
+            s.color.g *= 0.5f;
+            s.color.b *= 0.5f;
+            normals[0] = s.getNormal();
+            normals[0].origin -= s.getDirection();
+        }
+        {
+            Segment s(t.transformPoint(boxes[0].getPoint(1)), t.transformPoint(boxes[0].getPoint(2)), boxes[0].getFillColor());
+            s.color.r *= 0.5f;
+            s.color.g *= 0.5f;
+            s.color.b *= 0.5f;
+            normals[1] = s.getNormal();
+            normals[1].origin -= s.getDirection();
+        }
+    }
+
+    {
+        sf::Transform t = boxes[1].getTransform();
+        {
+            Segment s(t.transformPoint(boxes[1].getPoint(0)), t.transformPoint(boxes[1].getPoint(1)), boxes[1].getFillColor());
+            s.color.r *= 0.5f;
+            s.color.g *= 0.5f;
+            s.color.b *= 0.5f;
+            normals[2] = s.getNormal();
+            normals[2].origin += s.getDirection();
+        }
+        {
+            Segment s(t.transformPoint(boxes[1].getPoint(1)), t.transformPoint(boxes[1].getPoint(2)), boxes[1].getFillColor());
+            s.color.r *= 0.5f;
+            s.color.g *= 0.5f;
+            s.color.b *= 0.5f;
+            normals[3] = s.getNormal();
+            normals[3].origin += s.getDirection();
+        }
+    }
+}
 
 int main(int argc, char** argv)
 {
@@ -103,13 +166,9 @@ int main(int argc, char** argv)
     sf::Vector2f xVector(1.0f, 0.0f);
 
     //SAT related stuff
-    Segment test1;
-    test1.color = sf::Color::Green;
-    test1.points[0] = { 150, 50 };
-    test1.points[1] = { 250, 50 };
+    std::array<Axis, 4> normals;
 
-    Axis test2 = test1.getNormal();
-    test2.color = sf::Color::Black;
+    calcNormals(boxes, normals);
 
     //the loop
     while (window.isOpen())
@@ -178,6 +237,7 @@ int main(int argc, char** argv)
                         float angle = getAngleBetweenVectors(xVector, mouseClick - boxes[affectedBox].getPosition());
                         boxes[affectedBox].setRotation(angle * 180.0f / (float)PI);
                     }
+                    calcNormals(boxes, normals);
                 }
             }
         }
@@ -187,8 +247,10 @@ int main(int argc, char** argv)
         {
             drawBox(window, boxes[i]);
         }
-        window.draw(test1);
-        window.draw(test2);
+        for (size_t i = 0; i < normals.size(); ++i)
+        {
+            window.draw(normals[i]);
+        }
         window.display();
 
         sf::sleep(sf::milliseconds(16));
