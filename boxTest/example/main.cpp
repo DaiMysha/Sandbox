@@ -4,10 +4,13 @@
 #include <SFML/Graphics.hpp>
 #include <Box2D/Box2D.h>
 
-#define WIDTH   640
-#define HEIGHT  480
+namespace {
 
-#define M_PI 3.14159265359
+const unsigned WIDTH = 640;
+const unsigned HEIGHT = 480;
+const double PI = 3.14159265359;
+
+} // !namespace
 
 enum Direction { UP, LEFT, DOWN, RIGHT, D_SIZE };
 
@@ -81,7 +84,7 @@ class PhysicBox : public sf::Drawable
         {
             if (!_body) return;
             b2Vec2 position = _body->GetPosition();
-            float32 angle = _body->GetAngle() * 180.0f / M_PI*1.0f;
+            float32 angle = _body->GetAngle() * 180.0f / PI*1.0f;
 
             _bodyVisual.setRotation(angle);
             _bodyVisual.setPosition(position.x, position.y);
@@ -193,7 +196,7 @@ int main(int argc, char** argv)
     while (window.isOpen())
     {
         sf::Event event;
-        while (window.pollEvent(event)) 
+        while (window.pollEvent(event))
         {
             if (event.type == sf::Event::Closed)
             {
