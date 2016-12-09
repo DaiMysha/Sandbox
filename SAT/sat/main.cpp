@@ -26,8 +26,52 @@ void drawBox(sf::RenderTarget& window, const sf::RectangleShape& box)
 
 template <typename T>
 float getAngleBetweenVectors(const sf::Vector2<T>& o, const sf::Vector2<T>& v) {
-    return -(atan2(static_cast<double>(o.y), static_cast<double>(o.x)) - atan2(static_cast<double>(v.y), static_cast<double>(v.x)));
+    return (float)-(atan2(static_cast<double>(o.y), static_cast<double>(o.x)) - atan2(static_cast<double>(v.y), static_cast<double>(v.x)));
 }
+
+template <typename T>
+float norm(const sf::Vector2<T>& a)
+{
+    return sqrt(static_cast<float>(a.x*a.x + a.y*a.y));
+}
+
+template <typename T>
+sf::Vector2<T> normalize(const sf::Vector2<T>& vec)
+{
+    T n = norm(vec);
+    return sf::Vector2<T>(T(vec.x / n), T(vec.y / n));
+}
+
+class Axis : public sf::Drawable
+{
+    public:
+        sf::Vector2f origin;
+        sf::Vector2f direction;
+        sf::Color color;
+
+    protected:
+        virtual void draw(sf::RenderTarget& target, sf::RenderStates states) const override;
+};
+
+class Segment : public sf::Drawable
+{
+    public:
+        std::array<sf::Vector2f,2> points;
+        sf::Color color;
+
+        Axis getNormal()
+        {
+            sf::Vector2f d = points[1] - points[0];
+            Axis a;
+            a.origin = points[0] + d / 2.0f;
+            a.direction = normalize(sf::Vector2f(d.y, -d.x));
+
+            return a;
+        }
+
+    protected:
+        virtual void draw(sf::RenderTarget& target, sf::RenderStates states) const override;
+};
 
 int main(int argc, char** argv)
 {
@@ -57,6 +101,15 @@ int main(int argc, char** argv)
     int affectedBox = -1;
 
     sf::Vector2f xVector(1.0f, 0.0f);
+
+    //SAT related stuff
+    Segment test1;
+    test1.color = sf::Color::Green;
+    test1.points[0] = { 150, 50 };
+    test1.points[1] = { 250, 50 };
+
+    Axis test2 = test1.getNormal();
+    test2.color = sf::Color::Black;
 
     //the loop
     while (window.isOpen())
@@ -123,7 +176,7 @@ int main(int argc, char** argv)
                     {
                         mouseClick = { (float)event.mouseMove.x, (float)event.mouseMove.y };
                         float angle = getAngleBetweenVectors(xVector, mouseClick - boxes[affectedBox].getPosition());
-                        boxes[affectedBox].setRotation(angle * 180.0f / PI);
+                        boxes[affectedBox].setRotation(angle * 180.0f / (float)PI);
                     }
                 }
             }
@@ -134,10 +187,30 @@ int main(int argc, char** argv)
         {
             drawBox(window, boxes[i]);
         }
+        window.draw(test1);
+        window.draw(test2);
         window.display();
 
         sf::sleep(sf::milliseconds(16));
     }
 
     return 0;
+}
+
+void Axis::draw(sf::RenderTarget& target, sf::RenderStates states) const
+{
+    sf::Vertex v[2];
+    v[0] = { origin - direction * 20000.0f, color };
+    v[1] = { origin + direction * 20000.0f, color };
+
+    target.draw(v, 2, sf::Lines, states);
+}
+
+void Segment::draw(sf::RenderTarget& target, sf::RenderStates states) const
+{
+    sf::Vertex v[2];
+    v[0] = { points[0], color };
+    v[1] = { points[1], color };
+
+    target.draw(v, 2, sf::Lines, states);
 }
