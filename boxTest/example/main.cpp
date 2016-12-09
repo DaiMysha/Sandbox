@@ -58,7 +58,7 @@ class PhysicBox : public sf::Drawable
             {
                 _bodyDef.type = b2_staticBody;
             }
-            _bodyDef.fixedRotation = true;
+            //_bodyDef.fixedRotation = true;
 
             if (_body)
             {
