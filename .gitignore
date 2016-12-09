@@ -29,3 +29,8 @@
 *.app
 /boxTest/build_msvc
 /boxTest/lib
+
+*.tmp
+*/build*
+*/bin
+*/lib
