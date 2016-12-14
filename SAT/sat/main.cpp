@@ -137,8 +137,7 @@ class ProjectedSegment
 
         operator Segment() const
         {
-            sf::Vector2f med(axis.origin.x, 0);
-            return Segment(axis.origin + mini * axis.direction - med, axis.origin + maxi * axis.direction - med, color);
+            return Segment(axis.origin + mini * axis.direction, axis.origin + maxi * axis.direction, color);
         }
 
         ProjectedSegment collides(const ProjectedSegment& other)
@@ -149,30 +148,24 @@ class ProjectedSegment
             {
                 return ProjectedSegment();
             }
-            std::cout << "Axis : " << axis.origin << " > " << axis.direction << std::endl;
-            std::cout << mini << ">" << maxi
+            /*std::cout << "Axis : " << axis.origin << " > " << axis.direction << std::endl;
+            std::cout << "min/max : " << mini << ">" << maxi
                 << " ; "
                 << other.mini << ">" << other.maxi
-                << std::endl;
+                << std::endl;*/
 
-            if (mini < other.maxi)
-            {
-                x1 = mini;
-                x2 = other.maxi;
-            }
+            x1 = std::max(mini, other.mini);
+            x2 = std::min(maxi, other.maxi);
 
-            if (other.mini < maxi)
-            {
-                x1 = other.mini;
-                x2 = maxi;
-            }
+            /*std::cout << "Projection : " << x1 << ">" << x2 << std::endl;
+            std::cout << " " << std::endl;*/
 
-            if (x1 != 0.0f && x2 != 0.0f)
-            {
-                return ProjectedSegment(axis, x1, x2, sf::Color::White);
-            }
+            return ProjectedSegment(axis, x1, x2, sf::Color::White);
+        }
 
-            return ProjectedSegment();
+        float length() const
+        {
+            return std::abs(maxi - mini);
         }
 
         Axis axis;
@@ -185,7 +178,6 @@ class ProjectedSegment
 
 void calcNormals(std::array<sf::RectangleShape, 2>& boxes, std::array<Axis, 4>& normals)
 {
-
     int colorReduction = 3;
     {
         sf::Transform t = boxes[0].getTransform();
@@ -231,7 +223,7 @@ void calcNormals(std::array<sf::RectangleShape, 2>& boxes, std::array<Axis, 4>& 
 //returns distance from axis center to point
 float project(const sf::Vector2f& v, const Axis& axis)
 {
-    return dot((v), axis.direction);
+    return dot(v-axis.origin, axis.direction);
 }
 
 ProjectedSegment project(const sf::RectangleShape& box, const Axis& axis)
@@ -259,25 +251,29 @@ ProjectedSegment project(const sf::RectangleShape& box, const Axis& axis)
     }
 
     //std::cout << "***********" << std::endl;
+    /*std::cout << "Projection of box " 
+        << box.getPoint(0) << ">" << box.getPoint(1) 
+        << "on axis " << axis.origin << " > " << axis.direction
+        << " = " << mini << ">" << maxi         
+        << std::endl;*/
 
     return ProjectedSegment(axis, mini, maxi, sf::Color::White);
 }
 
-void calcProjections(std::array<ProjectedSegment, 8>& projections, const std::array<sf::RectangleShape, 2>& boxes, const std::array<Axis, 4>& normals)
+void calcProjections(std::array<ProjectedSegment, 8>& projections, std::array<sf::RectangleShape, 2>& boxes, std::array<Axis, 4>& normals)
 {
     for (size_t b = 0; b < boxes.size(); ++b)
     {
         for (size_t n = 0; n < normals.size(); ++n)
         {
             projections[b * 4 + n] = project(boxes[b], normals[n]);
-            projections[b * 4 + n].color = boxes[b].getFillColor();
+            projections[b * 4 + n].color = boxes[b].getFillColor() + sf::Color(50, 50, 50);;
         }
     }
 }
 
 int main(int argc, char** argv)
 {
-
     /** SFML STUFF **/
 
     sf::RenderWindow window(sf::VideoMode(WIDTH, HEIGHT), "SAT test");
@@ -307,11 +303,15 @@ int main(int argc, char** argv)
     //SAT related stuff
     std::array<Axis, 4> normals;
     std::array<ProjectedSegment, 8> projections;
-    ProjectedSegment collision;
-    collision.color = sf::Color::White;
+    std::array<ProjectedSegment, 4> collisions;
 
     calcNormals(boxes, normals);
     calcProjections(projections, boxes, normals);
+    ProjectedSegment collisionVector;
+    collisionVector.color = sf::Color::Black;
+
+    sf::Clock fpsTest;
+    size_t frames = 0;
 
     //the loop
     while (window.isOpen())
@@ -382,17 +382,38 @@ int main(int argc, char** argv)
                     }
                     calcNormals(boxes, normals);
                     calcProjections(projections, boxes, normals);
-                    collision = projections[1].collides(projections[5]);
+                    for (size_t i = 0; i < collisions.size(); ++i)
+                    {
+                        collisions[i] = projections[i].collides(projections[i+normals.size()]);
+                    }
                 }
             }
         }
+
+        //check collisions
+        size_t minCollision = 0;
+        float l = 0.0f;
+        for (size_t i = 1; i < collisions.size(); ++i)
+        {
+            if (collisions[i].length() < collisions[minCollision].length())
+            {
+                minCollision = i;
+            }
+        }
+
+        if (collisions[minCollision].length() != 0.0f)
+        {
+            l = collisions[minCollision].length();
+        }
+        collisionVector = ProjectedSegment(collisions[minCollision].axis, 0, l, sf::Color(255,127,15));
+        collisionVector.axis.origin = boxes[0].getPosition();
 
         window.clear({ 127, 127, 127 });
         for (size_t i = 0; i < boxes.size(); ++i)
         {
             drawBox(window, boxes[i]);
         }
-        for (size_t i = 0; i < normals.size(); ++i)
+        /*for (size_t i = 0; i < normals.size(); ++i)
         {
             window.draw(normals[i]);
         }
@@ -400,10 +421,21 @@ int main(int argc, char** argv)
         {
             window.draw((Segment)projections[i]);
         }
-        window.draw((Segment)collision);
+        for (size_t i = 0; i < collisions.size(); ++i)
+        {
+            window.draw((Segment)collisions[i]);
+        }*/
+        window.draw((Segment)collisionVector);
         window.display();
 
-        sf::sleep(sf::milliseconds(16));
+        ++frames;
+        if (fpsTest.getElapsedTime().asMilliseconds() > 500)
+        {
+            std::cout << "fps : " << frames * 2 << std::endl;
+            fpsTest.restart();
+            frames = 0;
+        }
+
     }
 
     return 0;
