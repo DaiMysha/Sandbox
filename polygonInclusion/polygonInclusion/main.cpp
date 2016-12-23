@@ -123,10 +123,6 @@ bool contains(const sf::ConvexShape& shape, sf::Vector2f point)
     int ip1;
     while(i != maxyi)
     {
-        if(i >= shape.getPointCount())
-        {
-            i = 0;
-        }
         ip1 = i+1;
         if(ip1 >= shape.getPointCount())
         {
@@ -151,16 +147,16 @@ bool contains(const sf::ConvexShape& shape, sf::Vector2f point)
             rightSide2 = maxYtmp;
         }
         ++i;
+        if(i >= shape.getPointCount())
+        {
+            i = 0;
+        }
     }
 
     //leftSide
     i = minyi;
     while(i != maxyi)
     {
-        if(i < 0)
-        {
-            i = shape.getPointCount()-1;
-        }
         ip1 = i-1;
         if(ip1 < 0)
         {
@@ -185,6 +181,10 @@ bool contains(const sf::ConvexShape& shape, sf::Vector2f point)
             leftSide2 = maxYtmp;
         }
         --i;
+        if(i < 0)
+        {
+            i = shape.getPointCount()-1;
+        }
     }
 
     return (isLeft(shape.getPoint(rightSide1), shape.getPoint(rightSide2), point) >= 0
