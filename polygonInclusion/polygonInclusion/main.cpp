@@ -7,6 +7,8 @@
 #define WIDTH   640
 #define HEIGHT  480
 
+std::array<sf::Color, 6> colors;
+
 std::ostream& operator<<(std::ostream& out, const sf::Vector2f& v)
 {
     out << v.x << "," << v.y;
@@ -21,7 +23,7 @@ void drawShape(sf::RenderTarget& window, const sf::ConvexShape& shape)
 
     for (int i = 0; i < shape.getPointCount(); ++i)
     {
-        points[i] = { t.transformPoint(shape.getPoint(i)), shape.getFillColor() };
+        points[i] = { t.transformPoint(shape.getPoint(i)), i < colors.size()?colors[i]:shape.getFillColor() };
     }
     points[shape.getPointCount()] = points[0];
 
@@ -77,9 +79,12 @@ T dot(const sf::Vector2<T>& a, const sf::Vector2<T>& b) {
 //tests if P2 is left
 ///returns >0 if left, 0 if on the line, <0 if right
 template <typename T>
-T isLeft(const sf::Vector2<T>& P0, const sf::Vector2<T>& P1, const sf::Vector2<T>& P2)
+T isLeft(const sf::Vector2<T>& p0, const sf::Vector2<T>& p1, const sf::Vector2<T>& p2)
 {
-    return ( (P1.x - P0.x) * (P2.y - P0.y) - (P2.x -  P0.x) * (P1.y - P0.y) );
+    if(p0.y < p1.y)
+        return ( (p1.x - p0.x) * (p2.y - p0.y) - (p2.x -  p0.x) * (p1.y - p0.y) );
+    else
+        return ( (p0.x - p1.x) * (p2.y - p1.y) - (p2.x -  p1.x) * (p0.y - p1.y) );
 }
 
 bool contains(const sf::ConvexShape& shape, sf::Vector2f point)
@@ -105,8 +110,6 @@ bool contains(const sf::ConvexShape& shape, sf::Vector2f point)
         }
     }
 
-    //std::cout << "min/max : " << miny << "/" << maxy << " / " << point.y << std::endl;
-
     if(point.y < miny || point.y > maxy)
     {
         return false;
@@ -130,10 +133,22 @@ bool contains(const sf::ConvexShape& shape, sf::Vector2f point)
             ip1 = 0;
         }
 
-        if(point.y > shape.getPoint(i).y && point.y < shape.getPoint(ip1).y)
+        int minYtmp, maxYtmp;
+        if(shape.getPoint(i).y < shape.getPoint(ip1).y)
         {
-            rightSide1 = i;
-            rightSide2 = ip1;
+            minYtmp = i;
+            maxYtmp = ip1;
+        }
+        else
+        {
+            maxYtmp = i;
+            minYtmp = ip1;
+        }
+
+        if(point.y >= shape.getPoint(minYtmp).y && point.y <= shape.getPoint(maxYtmp).y)
+        {
+            rightSide1 = minYtmp;
+            rightSide2 = maxYtmp;
         }
         ++i;
     }
@@ -152,16 +167,31 @@ bool contains(const sf::ConvexShape& shape, sf::Vector2f point)
             ip1 = shape.getPointCount()-1;
         }
 
-        if(point.y > shape.getPoint(i).y && point.y < shape.getPoint(ip1).y)
+        int minYtmp, maxYtmp;
+        if(shape.getPoint(i).y < shape.getPoint(ip1).y)
         {
-            leftSide1 = ip1;
-            leftSide2 = i;
+            minYtmp = i;
+            maxYtmp = ip1;
+        }
+        else
+        {
+            maxYtmp = i;
+            minYtmp = ip1;
+        }
+
+        if(point.y >= shape.getPoint(minYtmp).y && point.y <= shape.getPoint(maxYtmp).y)
+        {
+            leftSide1 = minYtmp;
+            leftSide2 = maxYtmp;
         }
         --i;
     }
 
-    return isLeft(shape.getPoint(rightSide1), shape.getPoint(rightSide2), point) >= 0
-        && isLeft(shape.getPoint(leftSide1), shape.getPoint(leftSide2), point) >= 0;
+    return (isLeft(shape.getPoint(rightSide1), shape.getPoint(rightSide2), point) >= 0
+        && isLeft(shape.getPoint(leftSide1), shape.getPoint(leftSide2), point) <= 0)
+        ||
+        (isLeft(shape.getPoint(rightSide1), shape.getPoint(rightSide2), point) <= 0
+        && isLeft(shape.getPoint(leftSide1), shape.getPoint(leftSide2), point) >= 0);
 }
 
 int main(int argc, char** argv)
@@ -178,12 +208,32 @@ int main(int argc, char** argv)
     sf::ConvexShape shape;
 
     shape.setFillColor(sf::Color::Red);
-    shape.setPointCount(5);
-    shape.setPoint(0, sf::Vector2f(40,-140));
-    shape.setPoint(1, sf::Vector2f(120,-40));
-    shape.setPoint(2, sf::Vector2f(60,100));
-    shape.setPoint(3, sf::Vector2f(-90,50));
-    shape.setPoint(4, sf::Vector2f(60,-80));
+    colors[0] = sf::Color::Green;
+    colors[1] = sf::Color::Blue;
+    colors[2] = sf::Color::Red;
+    colors[3] = sf::Color::Red;
+    colors[4] = sf::Color::Red;
+    colors[5] = sf::Color::Red;
+    shape.setPointCount(6);
+    bool cw = false;
+    if(cw)
+    {
+        shape.setPoint(0, sf::Vector2f(40,-140));
+        shape.setPoint(1, sf::Vector2f(120,-40));
+        shape.setPoint(2, sf::Vector2f(120,0));
+        shape.setPoint(3, sf::Vector2f(60,100));
+        shape.setPoint(4, sf::Vector2f(-90,50));
+        shape.setPoint(5, sf::Vector2f(60,-80));
+    }
+    else
+    {
+        shape.setPoint(5, sf::Vector2f(40,-140));
+        shape.setPoint(4, sf::Vector2f(120,-40));
+        shape.setPoint(3, sf::Vector2f(120,0));
+        shape.setPoint(2, sf::Vector2f(60,100));
+        shape.setPoint(1, sf::Vector2f(-90,50));
+        shape.setPoint(0, sf::Vector2f(60,-80));
+    }
     shape.setPosition(WIDTH/2, HEIGHT/2);
 
     //the loop
@@ -206,61 +256,6 @@ int main(int argc, char** argv)
                         break;
                 }
             }
-            /*else if (event.type == sf::Event::MouseButtonPressed)
-            {
-                mouseClick = { static_cast<float>(event.mouseButton.x), static_cast<float>(event.mouseButton.y) };
-
-                for (size_t i = 0; i < boxes.size(); ++i)
-                {
-                    if (affectedBox == -1 && boxes[i].getGlobalBounds().contains(mouseClick.x, mouseClick.y ))
-                    {
-                        affectedBox = i;
-                    }
-                }
-                if (affectedBox != -1)
-                {
-                    switch (event.mouseButton.button)
-                    {
-                    case sf::Mouse::Left://move
-                        dragging = true;
-                        break;
-                    case sf::Mouse::Right://move
-                        rotating = true;
-                        break;
-                    }
-                }
-            }
-            else if (event.type == sf::Event::MouseButtonReleased)
-            {
-                affectedBox = -1;
-                dragging = false;
-                rotating = false;
-            }
-            else if (event.type == sf::Event::MouseMoved)
-            {
-                if (affectedBox != -1)
-                {
-                    if (dragging)
-                    {
-                        sf::Vector2f newPos = boxes[affectedBox].getPosition();
-                        newPos = { newPos.x + event.mouseMove.x - mouseClick.x, newPos.y + event.mouseMove.y - mouseClick.y };
-                        boxes[affectedBox].setPosition(newPos);
-                        mouseClick = { (float)event.mouseMove.x, (float)event.mouseMove.y };
-                    }
-                    else if (rotating)
-                    {
-                        mouseClick = { (float)event.mouseMove.x, (float)event.mouseMove.y };
-                        float angle = getAngleBetweenVectors(xVector, mouseClick - boxes[affectedBox].getPosition());
-                        boxes[affectedBox].setRotation(angle * 180.0f / (float)PI);
-                    }
-                    calcNormals(boxes, normals);
-                    calcProjections(projections, boxes, normals);
-                    for (size_t i = 0; i < collisions.size(); ++i)
-                    {
-                        collisions[i] = projections[i].collides(projections[i+normals.size()]);
-                    }
-                }
-            }*/
         }
 
         sf::Vector2f mouse(sf::Mouse::getPosition(window).x, sf::Mouse::getPosition(window).y);
@@ -272,9 +267,16 @@ int main(int argc, char** argv)
         }
 
         window.clear({ 127, 127, 127 });
+        sf::Color c2 = shape.getFillColor();
+        if(isLeft(shape.getPoint(0) + shape.getPosition(), shape.getPoint(1) + shape.getPosition(), mouse)>0)
+        {
+            c2 = sf::Color::White;
+        }
         drawShape(window, shape);
         drawLine(window, sf::Vector2f(WIDTH/2, HEIGHT/2), mouse, c);
         window.display();
+
+        sf::sleep(sf::milliseconds(16));
 
         ++frames;
         if (fpsTest.getElapsedTime().asMilliseconds() > 500)
