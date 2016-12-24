@@ -2,33 +2,45 @@
 
 #include "QuadTree.hpp"
 
-template <size_t CAPACITY>
-QuadTree<CAPACITY>::QuadTree(float width, float height) : QuadTree(0, 0, width, height)
+/***************** NODE *****************/
+
+template <size_t CAPACITY, typename T>
+QuadTree<CAPACITY, T>::Node::Node()
 {
 }
 
-template <size_t CAPACITY>
-QuadTree<CAPACITY>::QuadTree(float left, float top, float width, float height) : _coveredZone(left, top, width, height), _children(nullptr)
+template <size_t CAPACITY, typename T>
+QuadTree<CAPACITY, T>::Node::Node(const sf::Vector2f& p, const T& d) : position(p), data(d)
 {
 }
 
-template<size_t CAPACITY>
-QuadTree<CAPACITY>::~QuadTree()
+template <size_t CAPACITY, typename T>
+QuadTree<CAPACITY, T>::QuadTree(float width, float height) : QuadTree(0, 0, width, height)
+{
+}
+
+template <size_t CAPACITY, typename T>
+QuadTree<CAPACITY, T>::QuadTree(float left, float top, float width, float height) : _coveredZone(left, top, width, height), _children(nullptr)
+{
+}
+
+template<size_t CAPACITY, typename T>
+QuadTree<CAPACITY, T>::~QuadTree()
 {
     _deleteChildren();
 }
 
-template <size_t CAPACITY>
-void QuadTree<CAPACITY>::insert(const sf::Vector2f& item)
+template <size_t CAPACITY, typename T>
+void QuadTree<CAPACITY, T>::insert(const sf::Vector2f& position, const T& item)
 {
-    if(_coveredZone.contains(item)) _insert(item);
+    if(_coveredZone.contains(position)) _insert(position, item);
 }
 
-template <size_t CAPACITY>
-bool QuadTree<CAPACITY>::remove(const sf::Vector2f& item)
+template <size_t CAPACITY, typename T>
+bool QuadTree<CAPACITY, T>::remove(const T& item)
 {
-    auto it = std::find_if(_data.begin(),_data.end(),[&item](const sf::Vector2f& n) {
-			return n == item;
+    auto it = std::find_if(_data.begin(),_data.end(),[&item](const Node& n) {
+			return n.data == item;
 		});
 
     if(it != _data.end())
@@ -48,15 +60,15 @@ bool QuadTree<CAPACITY>::remove(const sf::Vector2f& item)
     return false;
 }
 
-template <size_t CAPACITY>
-size_t QuadTree<CAPACITY>::remove(const sf::Rect<float>& zone)
+template <size_t CAPACITY, typename T>
+size_t QuadTree<CAPACITY, T>::remove(const sf::Rect<float>& zone)
 {
     size_t res = 0;
     if(!_coveredZone.intersects(zone)) return res;
 
-    _data.remove_if([&res,&zone](const sf::Vector2f& n){
-        if(zone.contains(n))
-                        {
+    _data.remove_if([&res,&zone](const Node& n){
+        if(zone.contains(n.position))
+        {
             ++res;
             return true;
         }
@@ -76,8 +88,8 @@ size_t QuadTree<CAPACITY>::remove(const sf::Rect<float>& zone)
     return res;
 }
 
-template <size_t CAPACITY>
-void QuadTree<CAPACITY>::clear()
+template <size_t CAPACITY, typename T>
+void QuadTree<CAPACITY, T>::clear()
 {
     if(_children)
     {
@@ -86,8 +98,8 @@ void QuadTree<CAPACITY>::clear()
     _data.clear();
 }
 
-template <size_t CAPACITY>
-size_t QuadTree<CAPACITY>::size() const
+template <size_t CAPACITY, typename T>
+size_t QuadTree<CAPACITY, T>::size() const
 {
     size_t s = _data.size();
     if(_children)
@@ -97,29 +109,35 @@ size_t QuadTree<CAPACITY>::size() const
     return s;
 }
 
-//void QuadTree<CAPACITY>::setArea(const physics::AABB<float>& area)
+//void QuadTree<CAPACITY, T>::setArea(const physics::AABB<float>& area)
 
-template <size_t CAPACITY>
-std::list<sf::Vector2f> QuadTree<CAPACITY>::query(float x, float y, float width, float height) const
+template <size_t CAPACITY, typename T>
+std::list<T> QuadTree<CAPACITY, T>::query(float x, float y, float width, float height) const
 {
-    if(!_coveredZone.intersects(sf::Rect<float>(x, y, width, height))) return std::list<sf::Vector2f>();
-    std::list<sf::Vector2f> res;
+    if(!_coveredZone.intersects(sf::Rect<float>(x, y, width, height))) return std::list<T>();
+    std::list<T> res;
     _query(x,y,width,height,res);
     return res;
 }
 
-template <size_t CAPACITY>
-std::list<sf::Vector2f> QuadTree<CAPACITY>::data() const
+template <size_t CAPACITY, typename T>
+std::list<T> QuadTree<CAPACITY, T>::data() const
 {
-    std::list<sf::Vector2f> ans;
+    std::list<T> ans;
     _getData(ans);
     return ans;
 }
 
-//std::list<QuadTree<CAPACITY>::Node> QuadTree<CAPACITY>::nodeData() const
+template <size_t CAPACITY, typename T>
+std::list<typename QuadTree<CAPACITY, T>::Node> QuadTree<CAPACITY, T>::nodeData() const
+{
+    return _data;
+}
 
-template <size_t CAPACITY>
-size_t QuadTree<CAPACITY>::shrinkToFit()
+//std::list<QuadTree<CAPACITY, T>::Node> QuadTree<CAPACITY, T>::nodeData() const
+
+template <size_t CAPACITY, typename T>
+size_t QuadTree<CAPACITY, T>::shrinkToFit()
 {
     size_t s = _data.size();
     if(!_children) return s;
@@ -144,8 +162,8 @@ size_t QuadTree<CAPACITY>::shrinkToFit()
     return s;
 }
 
-template <size_t CAPACITY>
-size_t QuadTree<CAPACITY>::depth()
+template <size_t CAPACITY, typename T>
+size_t QuadTree<CAPACITY, T>::depth()
 {
     size_t ans = 1;
 
@@ -160,8 +178,8 @@ size_t QuadTree<CAPACITY>::depth()
 /******************************** PROTECTED ********************************/
 /***************************************************************************/
 
-template <size_t CAPACITY>
-QuadTree<CAPACITY>::QuadTreeChild::QuadTreeChild(const sf::Rect<float>& parentZone) :
+template <size_t CAPACITY, typename T>
+QuadTree<CAPACITY, T>::QuadTreeChild::QuadTreeChild(const sf::Rect<float>& parentZone) :
     nw(parentZone.left, parentZone.top, parentZone.width / 2.0f, parentZone.height / 2.0f),
     ne(parentZone.left + parentZone.width / 2.0f, parentZone.top, parentZone.width / 2.0f, parentZone.height / 2.0f),
     sw(parentZone.left, parentZone.top + parentZone.height / 2.0f, parentZone.width / 2.0f, parentZone.height / 2.0f),
@@ -169,45 +187,46 @@ QuadTree<CAPACITY>::QuadTreeChild::QuadTreeChild(const sf::Rect<float>& parentZo
 {
 }
 
-template <size_t CAPACITY>
-void QuadTree<CAPACITY>::_subdivide()
+template <size_t CAPACITY, typename T>
+void QuadTree<CAPACITY, T>::_subdivide()
 {
     _deleteChildren();
 
     _children =  new QuadTreeChild(_coveredZone);
 
-    std::list<sf::Vector2f> tmp = _data;
+    std::list<Node> tmp = _data;
     _data.clear();
-    for(auto& it : tmp) {
-        insert(it);
+    for(auto& it : tmp)
+    {
+        insert(it.position, it.data);
     }
 }
 
 
-template <size_t CAPACITY>
-void QuadTree<CAPACITY>::_insert(const sf::Vector2f& item)
+template <size_t CAPACITY, typename T>
+void QuadTree<CAPACITY, T>::_insert(const sf::Vector2f& position, const T& item)
 {
     if(_children)
     {
-        QuadTree<CAPACITY>* target = this;
+        QuadTree<CAPACITY, T>* target = this;
         int insertCount = 0;
 
-        if(_children->nw._coveredZone.contains(item))
+        if(_children->nw._coveredZone.contains(position))
         {
             ++insertCount;
             target = &_children->nw;
         }
-        if(_children->ne._coveredZone.contains(item))
+        if(_children->ne._coveredZone.contains(position))
         {
             ++insertCount;
             target = &_children->ne;
         }
-        if(_children->sw._coveredZone.contains(item))
+        if(_children->sw._coveredZone.contains(position))
         {
             ++insertCount;
             target = &_children->sw;
         }
-        if(_children->se._coveredZone.contains(item))
+        if(_children->se._coveredZone.contains(position))
         {
             ++insertCount;
             target = &_children->se;
@@ -215,29 +234,29 @@ void QuadTree<CAPACITY>::_insert(const sf::Vector2f& item)
 
         if(insertCount == 1)  //only one node wants it
         {
-            target->insert(item);
+            target->insert(position, item);
             return;
         }
         else //collides with several children, keep here
         {
-            _data.emplace_back(item);
+            _data.emplace_back(Node(position, item));
             return;
         }
     }
 
-    _data.emplace_back(item);
+    _data.emplace_back(Node(position, item));
     if(_data.size() > CAPACITY) {
         _subdivide();
     }
 }
 
-template <size_t CAPACITY>
-void QuadTree<CAPACITY>::_query(float x, float y, float width, float height, std::list<sf::Vector2f>& res) const
+template <size_t CAPACITY, typename T>
+void QuadTree<CAPACITY, T>::_query(float x, float y, float width, float height, std::list<T>& res) const
 {
     sf::Rect<float> region(x, y, width, height);
     for(auto& n : _data)
     {
-        if(region.contains(n)) res.push_back(n);
+        if(region.contains(n.position)) res.push_back(n.data);
     }
 
     if(_children)
@@ -249,12 +268,16 @@ void QuadTree<CAPACITY>::_query(float x, float y, float width, float height, std
     }
 }
 
-template <size_t CAPACITY>
-void QuadTree<CAPACITY>::_getData(std::list<sf::Vector2f>& ans) const
+template <size_t CAPACITY, typename T>
+void QuadTree<CAPACITY, T>::_getData(std::list<T>& ans) const
 {
-    ans.insert(ans.end(), _data.begin(), _data.end());
+    for(auto n : _data)
+    {
+        ans.push_back(n.data);
+    }
 
-    if(_children) {
+    if(_children)
+    {
         _children->nw._getData(ans);
         _children->ne._getData(ans);
         _children->sw._getData(ans);
@@ -262,8 +285,8 @@ void QuadTree<CAPACITY>::_getData(std::list<sf::Vector2f>& ans) const
     }
 }
 
-template <size_t CAPACITY>
-void QuadTree<CAPACITY>::_deleteChildren()
+template <size_t CAPACITY, typename T>
+void QuadTree<CAPACITY, T>::_deleteChildren()
 {
     if(_children)
     {

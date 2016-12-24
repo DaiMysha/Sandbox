@@ -12,7 +12,7 @@
 
 const double PI = 3.14159265359;
 
-typedef QuadTree<4> QuadTree2D;
+typedef QuadTree<4, sf::Vector2f> QuadTree2D;
 
 std::ostream& operator<<(std::ostream& out, const sf::Vector2f& v)
 {
@@ -113,7 +113,7 @@ void addRandoms(QuadTree2D& l, int count) {
         w = rand() % ((int)x - WIDTH);
         h = rand() % ((int)y - HEIGHT);
 
-       l.insert(sf::Vector2f(x, y));
+       l.insert(sf::Vector2f(x, y), sf::Vector2f(x, y));
     }
 }
 
@@ -202,7 +202,7 @@ int main(int argc, char** argv)
                 if(event.mouseButton.button == sf::Mouse::Left) {
                     sf::Vector2i mouse = sf::Mouse::getPosition(window);
                     //addPoint(points,mouse.x,mouse.y,rand()%50,rand()%50);
-                    points.insert(sf::Vector2f(mouse.x, mouse.y));
+                    points.insert(sf::Vector2f(mouse.x, mouse.y), sf::Vector2f(mouse.x, mouse.y));
 
                 }
                 if(event.mouseButton.button == sf::Mouse::Right) {

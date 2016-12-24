@@ -4,11 +4,17 @@
 #include <SFML/Graphics.hpp>
 #include <list>
 
-template <size_t CAPACITY>
+template <size_t CAPACITY, typename T>
 class QuadTree
 {
     public:
-
+        struct Node
+        {
+            Node();
+            Node(const sf::Vector2f& p, const T& d);
+            sf::Vector2f position;
+            T data;
+        };
         QuadTree(const QuadTree& other) = delete;
         QuadTree& operator=(const QuadTree& other) = delete;
 
@@ -19,9 +25,9 @@ class QuadTree
         QuadTree(float left, float top, float width, float height);
         ~QuadTree();
 
-        void insert(const sf::Vector2f& item);
+        void insert(const sf::Vector2f& item, const T& data);
 
-        bool remove(const sf::Vector2f& item);
+        bool remove(const T& item);
         size_t remove(const sf::Rect<float>& zone);
 
         void clear();
@@ -29,9 +35,9 @@ class QuadTree
         size_t size() const;
         //void setArea(const physics::AABB<float>& area);
 
-        std::list<sf::Vector2f> query(float x, float y, float width, float height) const;
-        std::list<sf::Vector2f> data() const;
-        //std::list<QuadTree::Node> nodeData() const;
+        std::list<T> query(float x, float y, float width, float height) const;
+        std::list<T> data() const;
+        std::list<QuadTree::Node> nodeData() const;
 
         size_t shrinkToFit();
 
@@ -39,18 +45,18 @@ class QuadTree
 
     protected:
         void _subdivide();
-        inline void _insert(const sf::Vector2f& item);
-        inline void _query(float x, float y, float width, float height, std::list<sf::Vector2f>& res) const;
-        inline void _getData(std::list<sf::Vector2f>& ans) const;
+        inline void _insert(const sf::Vector2f& position, const T& item);
+        inline void _query(float x, float y, float width, float height, std::list<T>& res) const;
+        inline void _getData(std::list<T>& ans) const;
         inline void _deleteChildren();
 
         struct QuadTreeChild
         {
             QuadTreeChild(const sf::Rect<float>& parentZone);
-            QuadTree<CAPACITY> nw, ne, sw, se;
+            QuadTree<CAPACITY, T> nw, ne, sw, se;
         };
         sf::Rect<float> _coveredZone;
-        std::list<sf::Vector2f> _data;
+        std::list<Node> _data;
         QuadTreeChild* _children;
 
 };
