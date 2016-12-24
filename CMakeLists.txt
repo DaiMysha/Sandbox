@@ -22,6 +22,7 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules;${CMAKE_SOURCE_DIR}")
 set_option(BUILD_BOX2DTEST FALSE BOOL "box2D test project")
 set_option(BUILD_SAT FALSE BOOL "SAT implementation for SFML")
 set_option(BUILD_POLYGONINCLUSION FALSE BOOL "test algorithm to know if a point is inside a convex polygon for SFML")
+set_option(BUILD_QUADTREE FALSE BOOL "test implementation for a quadtree")
 
 # add the subdirectories
 if(BUILD_BOX2DTEST)
@@ -34,5 +35,9 @@ endif()
 
 if(BUILD_POLYGONINCLUSION)
 	add_subdirectory(polygonInclusion)
+endif()
+
+if(BUILD_QUADTREE)
+	add_subdirectory(QuadTree)
 endif()
 
