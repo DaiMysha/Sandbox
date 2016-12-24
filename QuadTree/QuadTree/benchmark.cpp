@@ -22,7 +22,8 @@ Point* points = nullptr;
 
 std::vector<Point> vPoint;
 std::vector<Point*> vPointPtr;
-QuadTree<4> qPoint(SIZE,SIZE);
+QuadTree<4> qPoint4(SIZE,SIZE);
+QuadTree<10> qPoint10(SIZE,SIZE);
 
 Point makeRandomPoint(float xmax, float ymax) {
     return Point(rand()%(int)xmax, rand()%(int)ymax);
@@ -42,20 +43,23 @@ void fillVecPtr() {
     for(int i=0;i<N_ITEMS;++i) vPointPtr.push_back(&points[i]);
 }
 
-void fillTree() {
-    for(int i=0;i<N_ITEMS;++i) qPoint.insert(sf::Vector2f(points[i].x, points[i].y));
+template<size_t CAPACITY>
+void fillTree(QuadTree<CAPACITY>& tree) {
+    for(int i=0;i<N_ITEMS;++i) tree.insert(sf::Vector2f(points[i].x, points[i].y));
 }
 
 void fill() {
     fillVec();
     fillVecPtr();
-    fillTree();
+    fillTree(qPoint4);
+    fillTree(qPoint10);
 }
 
 void reset() {
     vPoint.clear();
     vPointPtr.clear();
-    qPoint.clear();
+    qPoint4.clear();
+    qPoint10.clear();
     fill();
 }
 
@@ -99,20 +103,28 @@ int main(int argc, char** argv) {
         clock_after = clock();
 
         clock_vector = (clock_after - clock_before)*1000/CLOCKS_PER_SEC;
-        std::cout << "\tvector   : " << clock_vector << " ms" << std::endl;
+        std::cout << "\tvector     : " << clock_vector << " ms" << std::endl;
 
         clock_before = clock();
         fillVecPtr();
         clock_after = clock();
 
         clock_vector = (clock_after - clock_before)*1000/CLOCKS_PER_SEC;
-        std::cout << "\tvectorPtr: " << clock_vector << " ms" << std::endl;
+        std::cout << "\tvectorPtr  : " << clock_vector << " ms" << std::endl;
 
         clock_before = clock();
-        fillTree();
+        fillTree(qPoint4);
         clock_after = clock();
         clock_tree = (clock_after - clock_before)*1000/CLOCKS_PER_SEC;
-        std::cout << "\tquadTree : " << clock_tree << " ms" << std::endl;
+        std::cout << "\tquadTree4  : " << clock_tree << " ms" << std::endl;
+        std::cout << "\t\tdepth : " << qPoint4.depth() << std::endl;
+
+        clock_before = clock();
+        fillTree(qPoint10);
+        clock_after = clock();
+        clock_tree = (clock_after - clock_before)*1000/CLOCKS_PER_SEC;
+        std::cout << "\tquadTree10 : " << clock_tree << " ms" << std::endl;
+        std::cout << "\t\tdepth : " << qPoint10.depth() << std::endl;
         std::cout << std::endl;
     }
 
@@ -123,13 +135,19 @@ int main(int argc, char** argv) {
         clock_after = clock();
 
         clock_vector = (clock_after - clock_before)*1000/CLOCKS_PER_SEC;
-        std::cout << "\tvector   : " << clock_vector << " ms" << std::endl;
+        std::cout << "\tvector     : " << clock_vector << " ms" << std::endl;
 
         clock_before = clock();
-        qPoint.clear();
+        qPoint4.clear();
         clock_after = clock();
         clock_tree = (clock_after - clock_before)*1000/CLOCKS_PER_SEC;
-        std::cout << "\tquadTree : " << clock_tree << " ms" << std::endl;
+        std::cout << "\tquadTree4  : " << clock_tree << " ms" << std::endl;
+
+        clock_before = clock();
+        qPoint10.clear();
+        clock_after = clock();
+        clock_tree = (clock_after - clock_before)*1000/CLOCKS_PER_SEC;
+        std::cout << "\tquadTree10 : " << clock_tree << " ms" << std::endl;
         std::cout << std::endl;
         reset();
     }
@@ -141,18 +159,28 @@ int main(int argc, char** argv) {
         clock_after = clock();
 
         clock_vector = (clock_after - clock_before)*1000/CLOCKS_PER_SEC;
-        std::cout << "\tvector   : " << clock_vector << " ms" << std::endl;
+        std::cout << "\tvector     : " << clock_vector << " ms" << std::endl;
 
-        auto ll = qPoint.data();
+        auto ll = qPoint4.data();
         clock_before = clock();
         for(auto it = ll.begin(); it != ll.end();) {
-            qPoint.remove(*it);
+            qPoint4.remove(*it);
             ++it; ++it;
         }
         clock_after = clock();
         clock_tree = (clock_after - clock_before)*1000/CLOCKS_PER_SEC;
-        std::cout << "\tquadTree : " << clock_tree << " ms" << std::endl;
+        std::cout << "\tquadTree4  : " << clock_tree << " ms" << std::endl;
         std::cout << std::endl;
+
+        ll = qPoint10.data();
+        clock_before = clock();
+        for(auto it = ll.begin(); it != ll.end();) {
+            qPoint10.remove(*it);
+            ++it; ++it;
+        }
+        clock_after = clock();
+        clock_tree = (clock_after - clock_before)*1000/CLOCKS_PER_SEC;
+        std::cout << "\tquadTree10 : " << clock_tree << " ms" << std::endl;
         reset();
     }
 
@@ -165,21 +193,28 @@ int main(int argc, char** argv) {
         clock_after = clock();
 
         clock_vector = (clock_after - clock_before)*1000/CLOCKS_PER_SEC;
-        std::cout << "\tvector   : " << clock_vector << " ms (" << n << ")" << std::endl;
+        std::cout << "\tvector     : " << clock_vector << " ms (" << n << ")" << std::endl;
 
         clock_before = clock();
         n = query(vPointPtr,map).size();
         clock_after = clock();
 
         clock_vector = (clock_after - clock_before)*1000/CLOCKS_PER_SEC;
-        std::cout << "\tvectorPtr: " << clock_vector << " ms (" << n << ")" << std::endl;
+        std::cout << "\tvectorPtr  : " << clock_vector << " ms (" << n << ")" << std::endl;
 
-        auto ll = qPoint.data();
+        auto ll = qPoint4.data();
         clock_before = clock();
-        n = qPoint.query(map.left, map.top, map.width, map.height).size();
+        n = qPoint4.query(map.left, map.top, map.width, map.height).size();
         clock_after = clock();
         clock_tree = (clock_after - clock_before)*1000/CLOCKS_PER_SEC;
-        std::cout << "\tquadTree : " << clock_tree << " ms (" << n << ")" << std::endl;
+        std::cout << "\tquadTree4  : " << clock_tree << " ms (" << n << ")" << std::endl;
+
+        ll = qPoint10.data();
+        clock_before = clock();
+        n = qPoint10.query(map.left, map.top, map.width, map.height).size();
+        clock_after = clock();
+        clock_tree = (clock_after - clock_before)*1000/CLOCKS_PER_SEC;
+        std::cout << "\tquadTree10 : " << clock_tree << " ms (" << n << ")" << std::endl;
         std::cout << std::endl;
     }
 
@@ -193,14 +228,19 @@ int main(int argc, char** argv) {
         clock_after = clock();
 
         clock_vector = (clock_after - clock_before)*1000/CLOCKS_PER_SEC;
-        std::cout << "\tvector   : " << clock_vector << " ms (" << n << "/" << N_ITEMS << ")" << std::endl;
+        std::cout << "\tvector     : " << clock_vector << " ms (" << n << "/" << N_ITEMS << ")" << std::endl;
 
-        auto ll = qPoint.data();
         clock_before = clock();
-        n = qPoint.query(map.left, map.top, map.width, map.height).size();
+        n = qPoint4.query(map.left, map.top, map.width, map.height).size();
         clock_after = clock();
         clock_tree = (clock_after - clock_before)*1000/CLOCKS_PER_SEC;
-        std::cout << "\tquadTree : " << clock_tree << " ms (" << n << "/" << N_ITEMS << ")" << std::endl;
+        std::cout << "\tquadTree4  : " << clock_tree << " ms (" << n << "/" << N_ITEMS << ")" << std::endl;
+
+        clock_before = clock();
+        n = qPoint10.query(map.left, map.top, map.width, map.height).size();
+        clock_after = clock();
+        clock_tree = (clock_after - clock_before)*1000/CLOCKS_PER_SEC;
+        std::cout << "\tquadTree10 : " << clock_tree << " ms (" << n << "/" << N_ITEMS << ")" << std::endl;
         std::cout << std::endl;
     }
 
@@ -214,14 +254,19 @@ int main(int argc, char** argv) {
         clock_after = clock();
 
         clock_vector = (clock_after - clock_before)*1000/CLOCKS_PER_SEC;
-        std::cout << "\tvector   : " << clock_vector << " ms (" << n << "/" << N_ITEMS << ")" << std::endl;
+        std::cout << "\tvector     : " << clock_vector << " ms (" << n << "/" << N_ITEMS << ")" << std::endl;
 
-        auto ll = qPoint.data();
         clock_before = clock();
-        n = qPoint.query(map.left, map.top, map.width, map.height).size();
+        n = qPoint4.query(map.left, map.top, map.width, map.height).size();
         clock_after = clock();
         clock_tree = (clock_after - clock_before)*1000/CLOCKS_PER_SEC;
-        std::cout << "\tquadTree : " << clock_tree << " ms (" << n << "/" << N_ITEMS << ")" << std::endl;
+        std::cout << "\tquadTree4  : " << clock_tree << " ms (" << n << "/" << N_ITEMS << ")" << std::endl;
+
+        clock_before = clock();
+        n = qPoint10.query(map.left, map.top, map.width, map.height).size();
+        clock_after = clock();
+        clock_tree = (clock_after - clock_before)*1000/CLOCKS_PER_SEC;
+        std::cout << "\tquadTree10 : " << clock_tree << " ms (" << n << "/" << N_ITEMS << ")" << std::endl;
         std::cout << std::endl;
     }
 
