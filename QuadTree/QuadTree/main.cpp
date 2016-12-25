@@ -12,7 +12,21 @@
 
 const double PI = 3.14159265359;
 
-typedef QuadTree<4, sf::Vector2f> QuadTree2D;
+template <typename T>
+struct Node
+{
+    Node() {}
+    Node(const sf::Vector2f& p, const T& d) : position(p), data(d) {}
+    static inline bool belongsTo(float left, float top, float width, float height, const sf::Vector2f& p)
+    {
+        return p.x >= left && p.x < left + width
+            && p.y >= top && p.y < top + height;
+    }
+    sf::Vector2f position;
+    T data;
+};
+
+typedef QuadTree<4, sf::Vector2f, sf::Vector2f, Node<sf::Vector2f> > QuadTree2D;
 
 std::ostream& operator<<(std::ostream& out, const sf::Vector2f& v)
 {

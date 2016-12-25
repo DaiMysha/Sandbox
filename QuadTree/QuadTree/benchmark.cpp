@@ -9,6 +9,56 @@ int  N_ITEMS = 10000;
 
 int placeholderValue = 0;
 
+template <typename T>
+struct Node
+{
+    Node();
+    Node(const sf::Vector2f& p, const T& d);
+    static inline bool belongsTo(float left, float top, float width, float height, const sf::Vector2f& p);
+    sf::Vector2f position;
+    T data;
+};
+
+template <typename T>
+struct NodeSquare
+{
+    NodeSquare() {}
+    NodeSquare(const sf::Rect<float>& p, const T& d) : position(p), data(d) {}
+    static inline bool belongsTo(float left, float top, float width, float height, const sf::Rect<float>& p)
+    {
+        return !(   left+width < p.left
+                 || top+height < p.top
+                 || p.left+p.width < left
+                 || p.top+p.height < top);
+        //return p.intersects(sf::Rect<float>(left, top, width, height));
+    }
+    sf::Rect<float> position;
+    T data;
+};
+
+
+
+/***************** NODE *****************/
+
+template <typename T>
+Node<T>::Node()
+{
+}
+
+template <typename T>
+Node<T>::Node(const sf::Vector2f& p, const T& d) : position(p), data(d)
+{
+}
+
+
+template <typename T>
+bool Node<T>::belongsTo(float left, float top, float width, float height, const sf::Vector2f& p)
+{
+    return p.x >= left && p.x < left + width
+        && p.y >= top && p.y < top + height;
+}
+
+
 struct Point
 {
     float x,y;
@@ -16,7 +66,8 @@ struct Point
     Point() : x(0), y(0) {}
     Point(float xx, float yy) : x(xx), y(yy) {}
     Point(const Point& p) : x(p.x), y(p.y) {}
-    bool operator==(const Point& p) const {
+    bool operator==(const Point& p) const
+    {
         return this == &p;
     }
 };
@@ -25,8 +76,9 @@ Point* points = nullptr;
 
 std::vector<Point> vPoint;
 std::vector<Point*> vPointPtr;
-QuadTree<8, int> qPoint4(SIZE,SIZE, 8);
-QuadTree<8, int> qPoint10(SIZE,SIZE, 16);
+QuadTree<8, int, sf::Vector2f, Node<int> > qPoint4(SIZE,SIZE, 8);
+QuadTree<8, int, sf::Vector2f, Node<int> > qPoint10(SIZE,SIZE, 16);
+//QuadTree<8, int, sf::Rect<float>, NodeSquare<int> > qPoint10(SIZE,SIZE, 16);
 
 Point makeRandomPoint(float xmax, float ymax)
 {
@@ -51,9 +103,15 @@ void fillVecPtr()
 }
 
 template<size_t CAPACITY, typename T>
-void fillTree(QuadTree<CAPACITY, T>& tree)
+void fillTree(QuadTree<CAPACITY, T, sf::Vector2f, Node<int> >& tree)
 {
     for(int i=0;i<N_ITEMS;++i) tree.insert(sf::Vector2f(points[i].x, points[i].y), placeholderValue);
+}
+
+template<size_t CAPACITY, typename T>
+void fillTree(QuadTree<CAPACITY, T, sf::Rect<float>, NodeSquare<int> >& tree)
+{
+    for(int i=0;i<N_ITEMS;++i) tree.insert(sf::Rect<float>(points[i].x, points[i].y, 50, 50), placeholderValue);
 }
 
 void fill()
@@ -96,7 +154,7 @@ std::list<const Point*> query(const std::vector<Point*>& vec, const sf::Rect<flo
 
 int main(int argc, char** argv)
 {
-    srand(time(0));
+    srand(3333);
 
     std::cout << "Point amount ?\n>";
     std::cin>>N_ITEMS;
