@@ -33,6 +33,7 @@ class QuadTree
         void clear();
 
         size_t size() const;
+        size_t getNodeCount() const;
 
         std::list<T> query(float x, float y, float width, float height) const;
         std::list<T> data() const;

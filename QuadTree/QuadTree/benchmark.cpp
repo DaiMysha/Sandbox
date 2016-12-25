@@ -138,6 +138,7 @@ int main(int argc, char** argv)
         clock_tree = (clock_after - clock_before)*1000/CLOCKS_PER_SEC;
         std::cout << clock_tree << " ms" << std::endl;
         std::cout << "\t\tdepth : " << qPoint4.depth() << std::endl;
+        std::cout << "\t\tnodes : " << qPoint4.getNodeCount() << std::endl;
 
         std::cout << "\tquadTree8 : " << std::flush;
         clock_before = clock();
@@ -146,6 +147,7 @@ int main(int argc, char** argv)
         clock_tree = (clock_after - clock_before)*1000/CLOCKS_PER_SEC;
         std::cout << clock_tree << " ms" << std::endl;
         std::cout << "\t\tdepth : " << qPoint10.depth() << std::endl;
+        std::cout << "\t\tnodes : " << qPoint10.getNodeCount() << std::endl;
 
         std::cout << std::endl;
     }
