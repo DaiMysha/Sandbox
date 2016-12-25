@@ -19,10 +19,20 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules;${CMAKE_SOURCE_DIR}")
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules;${CMAKE_SOURCE_DIR}")
 
+if(CMAKE_COMPILER_IS_GNUCC)
+    set_option(USE_PROFILER FALSE BOOL "True to activate profiling options (gcc only)")
+endif()
+
 set_option(BUILD_BOX2DTEST FALSE BOOL "box2D test project")
 set_option(BUILD_SAT FALSE BOOL "SAT implementation for SFML")
 set_option(BUILD_POLYGONINCLUSION FALSE BOOL "test algorithm to know if a point is inside a convex polygon for SFML")
 set_option(BUILD_QUADTREE FALSE BOOL "test implementation for a quadtree")
+
+if(CMAKE_COMPILER_IS_GNUCC AND USE_PROFILER)
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -p")
+	set(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} -pg")
+	set(CMAKE_BUILD_TYPE Debug)
+endif()
 
 # add the subdirectories
 if(BUILD_BOX2DTEST)
