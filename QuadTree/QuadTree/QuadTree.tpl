@@ -146,6 +146,12 @@ size_t QuadTree<CAPACITY, T>::getNodeCount() const
     return ans;
 }
 
+template <size_t CAPACITY, typename T>
+size_t QuadTree<CAPACITY, T>::getCapacity() const
+{
+    return CAPACITY;
+}
+
 //void QuadTree<CAPACITY, T>::setArea(const physics::AABB<float>& area)
 
 template <size_t CAPACITY, typename T>
