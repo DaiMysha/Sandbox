@@ -20,7 +20,10 @@ QuadTree<CAPACITY, T>::QuadTree(float width, float height) : QuadTree(0, 0, widt
 }
 
 template <size_t CAPACITY, typename T>
-QuadTree<CAPACITY, T>::QuadTree(float left, float top, float width, float height) : _coveredZone(left, top, width, height), _children(nullptr)
+QuadTree<CAPACITY, T>::QuadTree(float left, float top, float width, float height) :
+    _coveredZone(left, top, width, height),
+    _children(nullptr),
+    _size(0)
 {
 }
 
@@ -46,6 +49,7 @@ bool QuadTree<CAPACITY, T>::remove(const T& item)
     if(it != _data.end())
     {
         _data.erase(it);
+        --_size;
         return true;
     }
 
@@ -56,6 +60,12 @@ bool QuadTree<CAPACITY, T>::remove(const T& item)
         if(!res && _children->ne.remove(item)) res =  true;
         if(!res && _children->sw.remove(item)) res =  true;
         if(!res && _children->se.remove(item)) res =  true;
+
+        if(res)
+        {
+            --_size;
+        }
+        return res;
     }
     return false;
 }
@@ -83,8 +93,8 @@ size_t QuadTree<CAPACITY, T>::remove(const sf::Rect<float>& zone)
         res += _children->se.remove(zone);
     }
 
+    _size -= res;
     shrinkToFit();
-
     return res;
 }
 
@@ -95,18 +105,14 @@ void QuadTree<CAPACITY, T>::clear()
     {
         _deleteChildren();
     }
+    _size = 0;
     _data.clear();
 }
 
 template <size_t CAPACITY, typename T>
 size_t QuadTree<CAPACITY, T>::size() const
 {
-    size_t s = _data.size();
-    if(_children)
-    {
-        s += _children->nw.size() + _children->ne.size() + _children->sw.size() + _children->se.size();
-    }
-    return s;
+    return _size;
 }
 
 //void QuadTree<CAPACITY, T>::setArea(const physics::AABB<float>& area)
@@ -159,6 +165,7 @@ size_t QuadTree<CAPACITY, T>::shrinkToFit()
     {
         _deleteChildren();
     }
+    _size = s;
     return s;
 }
 
@@ -196,6 +203,7 @@ void QuadTree<CAPACITY, T>::_subdivide()
 
     std::list<Node> tmp = _data;
     _data.clear();
+    _size = 0;
     for(auto& it : tmp)
     {
         insert(it.position, it.data);
@@ -234,11 +242,13 @@ void QuadTree<CAPACITY, T>::_insert(const sf::Vector2f& position, const T& item)
 
         if(insertCount == 1)  //only one node wants it
         {
+            ++_size;
             target->insert(position, item);
             return;
         }
         else //collides with several children, keep here
         {
+            ++_size;
             _data.emplace_back(Node(position, item));
             return;
         }
@@ -298,5 +308,6 @@ void QuadTree<CAPACITY, T>::_deleteChildren()
         delete _children;
         _children = nullptr;
     }
+    _size = _data.size();
 }
 

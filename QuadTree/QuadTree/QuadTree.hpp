@@ -58,6 +58,7 @@ class QuadTree
         sf::Rect<float> _coveredZone;
         std::list<Node> _data;
         QuadTreeChild* _children;
+        size_t _size; //represents the size of the current tree and all the trees under it
 
 };
 
