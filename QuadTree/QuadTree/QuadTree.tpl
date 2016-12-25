@@ -1,6 +1,20 @@
 #include <DMUtils/maths.hpp>
+#include <DMUtils/maths.hpp>
 
 #include "QuadTree.hpp"
+
+template <typename T>
+static inline bool _contains(const sf::Rect<T>& box, const T& x, const T& y)
+{
+    return x >= box.left && x < box.left + box.width
+        && y >= box.top && y < box.top + box.height;
+}
+
+template <typename T>
+static inline bool _contains(const sf::Rect<T>& box, const sf::Vector2<T>& p)
+{
+    return _contains(box, p.x, p.y);
+}
 
 /***************** NODE *****************/
 
@@ -36,7 +50,7 @@ QuadTree<CAPACITY, T>::~QuadTree()
 template <size_t CAPACITY, typename T>
 void QuadTree<CAPACITY, T>::insert(const sf::Vector2f& position, const T& item)
 {
-    if(_coveredZone.contains(position)) _insert(position, item);
+    if(_contains(_coveredZone, position)) _insert(position, item);
 }
 
 template <size_t CAPACITY, typename T>
@@ -77,7 +91,7 @@ size_t QuadTree<CAPACITY, T>::remove(const sf::Rect<float>& zone)
     if(!_coveredZone.intersects(zone)) return res;
 
     _data.remove_if([&res,&zone](const Node& n){
-        if(zone.contains(n.position))
+        if(_contains(zone, n.position))
         {
             ++res;
             return true;
@@ -210,7 +224,6 @@ void QuadTree<CAPACITY, T>::_subdivide()
     }
 }
 
-
 template <size_t CAPACITY, typename T>
 void QuadTree<CAPACITY, T>::_insert(const sf::Vector2f& position, const T& item)
 {
@@ -219,22 +232,22 @@ void QuadTree<CAPACITY, T>::_insert(const sf::Vector2f& position, const T& item)
         QuadTree<CAPACITY, T>* target = this;
         int insertCount = 0;
 
-        if(_children->nw._coveredZone.contains(position))
+        if(_contains(_children->nw._coveredZone,position))
         {
             ++insertCount;
             target = &_children->nw;
         }
-        if(_children->ne._coveredZone.contains(position))
+        if(_contains(_children->ne._coveredZone,position))
         {
             ++insertCount;
             target = &_children->ne;
         }
-        if(_children->sw._coveredZone.contains(position))
+        if(_contains(_children->sw._coveredZone,position))
         {
             ++insertCount;
             target = &_children->sw;
         }
-        if(_children->se._coveredZone.contains(position))
+        if(_contains(_children->se._coveredZone,position))
         {
             ++insertCount;
             target = &_children->se;
@@ -266,7 +279,7 @@ void QuadTree<CAPACITY, T>::_query(float x, float y, float width, float height, 
     sf::Rect<float> region(x, y, width, height);
     for(auto& n : _data)
     {
-        if(region.contains(n.position)) res.push_back(n.data);
+        if(_contains(region, n.position)) res.push_back(n.data);
     }
 
     if(_children)
@@ -310,4 +323,3 @@ void QuadTree<CAPACITY, T>::_deleteChildren()
     }
     _size = _data.size();
 }
-

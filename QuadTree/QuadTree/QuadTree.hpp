@@ -33,7 +33,6 @@ class QuadTree
         void clear();
 
         size_t size() const;
-        //void setArea(const physics::AABB<float>& area);
 
         std::list<T> query(float x, float y, float width, float height) const;
         std::list<T> data() const;
