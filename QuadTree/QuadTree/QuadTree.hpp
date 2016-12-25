@@ -21,8 +21,8 @@ class QuadTree
         QuadTree(QuadTree&& other) = default;
         QuadTree& operator=(QuadTree&& other) = default;
 
-        QuadTree(float width, float height);
-        QuadTree(float left, float top, float width, float height);
+        QuadTree(float width, float height, int maximumDepth = -1);
+        QuadTree(float left, float top, float width, float height, int maximumDepth = -1);
         ~QuadTree();
 
         void insert(const sf::Vector2f& item, const T& data);
@@ -44,7 +44,7 @@ class QuadTree
         size_t depth();
 
     protected:
-        void _subdivide();
+        void _subdivide(int newDepth = -1);
         inline void _insert(const sf::Vector2f& position, const T& item);
         inline void _query(float x, float y, float width, float height, std::list<T>& res) const;
         inline void _getData(std::list<T>& ans) const;
@@ -52,13 +52,14 @@ class QuadTree
 
         struct QuadTreeChild
         {
-            QuadTreeChild(const sf::Rect<float>& parentZone);
+            QuadTreeChild(const sf::Rect<float>& parentZone, int maximumDepth);
             QuadTree<CAPACITY, T> nw, ne, sw, se;
         };
         sf::Rect<float> _coveredZone;
         std::list<Node> _data;
         QuadTreeChild* _children;
         size_t _size; //represents the size of the current tree and all the trees under it
+        int _maximumDepth;
 
 };
 

@@ -25,8 +25,8 @@ Point* points = nullptr;
 
 std::vector<Point> vPoint;
 std::vector<Point*> vPointPtr;
-QuadTree<4, int> qPoint4(SIZE,SIZE);
-QuadTree<8, int> qPoint10(SIZE,SIZE);
+QuadTree<4, int> qPoint4(SIZE,SIZE, 4);
+QuadTree<8, int> qPoint10(SIZE,SIZE, 8);
 
 Point makeRandomPoint(float xmax, float ymax)
 {

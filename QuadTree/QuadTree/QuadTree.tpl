@@ -28,16 +28,19 @@ QuadTree<CAPACITY, T>::Node::Node(const sf::Vector2f& p, const T& d) : position(
 {
 }
 
+/***************** QUADTREE *****************/
+
 template <size_t CAPACITY, typename T>
-QuadTree<CAPACITY, T>::QuadTree(float width, float height) : QuadTree(0, 0, width, height)
+QuadTree<CAPACITY, T>::QuadTree(float width, float height, int maximumDepth) : QuadTree(0, 0, width, height, maximumDepth)
 {
 }
 
 template <size_t CAPACITY, typename T>
-QuadTree<CAPACITY, T>::QuadTree(float left, float top, float width, float height) :
+QuadTree<CAPACITY, T>::QuadTree(float left, float top, float width, float height, int maximumDepth) :
     _coveredZone(left, top, width, height),
     _children(nullptr),
-    _size(0)
+    _size(0),
+    _maximumDepth(maximumDepth)
 {
 }
 
@@ -168,8 +171,6 @@ std::list<typename QuadTree<CAPACITY, T>::Node> QuadTree<CAPACITY, T>::nodeData(
     return _data;
 }
 
-//std::list<QuadTree<CAPACITY, T>::Node> QuadTree<CAPACITY, T>::nodeData() const
-
 template <size_t CAPACITY, typename T>
 size_t QuadTree<CAPACITY, T>::shrinkToFit()
 {
@@ -214,20 +215,20 @@ size_t QuadTree<CAPACITY, T>::depth()
 /***************************************************************************/
 
 template <size_t CAPACITY, typename T>
-QuadTree<CAPACITY, T>::QuadTreeChild::QuadTreeChild(const sf::Rect<float>& parentZone) :
-    nw(parentZone.left, parentZone.top, parentZone.width / 2.0f, parentZone.height / 2.0f),
-    ne(parentZone.left + parentZone.width / 2.0f, parentZone.top, parentZone.width / 2.0f, parentZone.height / 2.0f),
-    sw(parentZone.left, parentZone.top + parentZone.height / 2.0f, parentZone.width / 2.0f, parentZone.height / 2.0f),
-    se(parentZone.left + parentZone.width / 2.0f, parentZone.top + parentZone.height / 2.0f, parentZone.width / 2.0f, parentZone.height / 2.0f)
+QuadTree<CAPACITY, T>::QuadTreeChild::QuadTreeChild(const sf::Rect<float>& parentZone, int maximumDepth) :
+    nw(parentZone.left, parentZone.top, parentZone.width / 2.0f, parentZone.height / 2.0f, maximumDepth),
+    ne(parentZone.left + parentZone.width / 2.0f, parentZone.top, parentZone.width / 2.0f, parentZone.height / 2.0f, maximumDepth),
+    sw(parentZone.left, parentZone.top + parentZone.height / 2.0f, parentZone.width / 2.0f, parentZone.height / 2.0f, maximumDepth),
+    se(parentZone.left + parentZone.width / 2.0f, parentZone.top + parentZone.height / 2.0f, parentZone.width / 2.0f, parentZone.height / 2.0f, maximumDepth)
 {
 }
 
 template <size_t CAPACITY, typename T>
-void QuadTree<CAPACITY, T>::_subdivide()
+void QuadTree<CAPACITY, T>::_subdivide(int newDepth)
 {
     _deleteChildren();
 
-    _children =  new QuadTreeChild(_coveredZone);
+    _children =  new QuadTreeChild(_coveredZone, newDepth);
 
     std::list<Node> tmp = _data;
     _data.clear();
@@ -282,8 +283,16 @@ void QuadTree<CAPACITY, T>::_insert(const sf::Vector2f& position, const T& item)
     }
 
     _data.emplace_back(Node(position, item));
-    if(_data.size() > CAPACITY) {
-        _subdivide();
+    if(_data.size() > CAPACITY)
+    {
+        if(_maximumDepth == -1)
+        {
+            _subdivide();
+        }
+        else if(_maximumDepth - 1 > 0)
+        {
+            _subdivide(_maximumDepth - 1);
+        }
     }
 }
 
