@@ -25,8 +25,8 @@ Point* points = nullptr;
 
 std::vector<Point> vPoint;
 std::vector<Point*> vPointPtr;
-QuadTree<4, int> qPoint4(SIZE,SIZE, 4);
-QuadTree<8, int> qPoint10(SIZE,SIZE, 8);
+QuadTree<8, int> qPoint4(SIZE,SIZE, 8);
+QuadTree<8, int> qPoint10(SIZE,SIZE, 16);
 
 Point makeRandomPoint(float xmax, float ymax)
 {
@@ -137,15 +137,17 @@ int main(int argc, char** argv)
         clock_after = clock();
         clock_tree = (clock_after - clock_before)*1000/CLOCKS_PER_SEC;
         std::cout << clock_tree << " ms" << std::endl;
+        std::cout << "\t\tcapa : " << qPoint4.getCapacity() << std::endl;
         std::cout << "\t\tdepth : " << qPoint4.depth() << std::endl;
         std::cout << "\t\tnodes : " << qPoint4.getNodeCount() << std::endl;
 
-        std::cout << "\tquadTree8 : " << std::flush;
+        std::cout << "\tquadTree8  : " << std::flush;
         clock_before = clock();
         fillTree(qPoint10);
         clock_after = clock();
         clock_tree = (clock_after - clock_before)*1000/CLOCKS_PER_SEC;
         std::cout << clock_tree << " ms" << std::endl;
+        std::cout << "\t\tcapa : " << qPoint10.getCapacity() << std::endl;
         std::cout << "\t\tdepth : " << qPoint10.depth() << std::endl;
         std::cout << "\t\tnodes : " << qPoint10.getNodeCount() << std::endl;
 
@@ -172,7 +174,7 @@ int main(int argc, char** argv)
         s = qPoint10.size();
         clock_after = clock();
         clock_tree = (clock_after - clock_before)*1000/CLOCKS_PER_SEC;
-        std::cout << "\tquadTree8 : " << clock_tree << " ms (" << s << ")" << std::endl;
+        std::cout << "\tquadTree8  : " << clock_tree << " ms (" << s << ")" << std::endl;
 
         std::cout << std::endl;
     }
@@ -195,7 +197,7 @@ int main(int argc, char** argv)
         clock_tree = (clock_after - clock_before)*1000/CLOCKS_PER_SEC;
         std::cout << clock_tree << " ms" << std::endl;
 
-        std::cout << "\tquadTree8 : " << std::flush;
+        std::cout << "\tquadTree8  : " << std::flush;
         clock_before = clock();
         qPoint10.clear();
         clock_after = clock();
@@ -231,7 +233,7 @@ int main(int argc, char** argv)
         std::cout << clock_tree << " ms" << std::endl;
 
         ll = qPoint10.data();
-        std::cout << "\tquadTree8 : " << std::flush;
+        std::cout << "\tquadTree8  : " << std::flush;
         clock_before = clock();
         for(auto it = ll.begin(); it != ll.end();)
         {
@@ -283,7 +285,7 @@ int main(int argc, char** argv)
 
         fillTree(qPoint10);
         ll = qPoint10.data();
-        std::cout << "\tquadTree8 : " << std::flush;
+        std::cout << "\tquadTree8  : " << std::flush;
         clock_before = clock();
         n = qPoint10.query(map.left, map.top, map.width, map.height).size();
         clock_after = clock();
@@ -319,7 +321,7 @@ int main(int argc, char** argv)
         qPoint4.clear();
 
         fillTree(qPoint10);
-        std::cout << "\tquadTree8 : " << std::flush;
+        std::cout << "\tquadTree8  : " << std::flush;
         clock_before = clock();
         n = qPoint10.query(map.left, map.top, map.width, map.height).size();
         clock_after = clock();
@@ -354,7 +356,7 @@ int main(int argc, char** argv)
         qPoint4.clear();
 
         fillTree(qPoint10);
-        std::cout << "\tquadTree8 : " << std::flush;
+        std::cout << "\tquadTree8  : " << std::flush;
         clock_before = clock();
         n = qPoint10.query(map.left, map.top, map.width, map.height).size();
         clock_after = clock();
@@ -377,7 +379,7 @@ int main(int argc, char** argv)
         std::cout << clock_tree << " ms (" << l.size() << ")" << std::endl;
 
         fillTree(qPoint10);
-        std::cout << "\tquadTree8 : " << std::flush;
+        std::cout << "\tquadTree8  : " << std::flush;
         clock_before = clock();
         l = qPoint4.data();
         clock_after = clock();
