@@ -19,6 +19,7 @@ QuadTree<CAPACITY, T, P, N>::QuadTree(float left, float top, float width, float 
 
 template <size_t CAPACITY, typename T, typename P, typename N>
 QuadTree<CAPACITY, T, P, N>::~QuadTree()
+
 {
     _deleteChildren();
 }
@@ -264,11 +265,8 @@ void QuadTree<CAPACITY, T, P, N>::_insert(const P& position, const T& item)
     _data.emplace_back(N(position, item));
     if(_data.size() > CAPACITY)
     {
-        if(_maximumDepth == -1)
-        {
-            _subdivide();
-        }
-        else if(_maximumDepth - 1 > 0)
+        //originally i had a value of -1 to represent infinite trees, but see bottom for remarks about that
+        if(_maximumDepth > 0)
         {
             _subdivide(_maximumDepth - 1);
         }
@@ -296,7 +294,7 @@ void QuadTree<CAPACITY, T, P, N>::_query(float x, float y, float width, float he
 template <size_t CAPACITY, typename T, typename P, typename N>
 void QuadTree<CAPACITY, T, P, N>::_getData(std::list<T>& ans) const
 {
-    for(auto n : _data)
+    for(auto& n : _data)
     {
         ans.push_back(n.data);
     }
@@ -325,3 +323,72 @@ void QuadTree<CAPACITY, T, P, N>::_deleteChildren()
     }
     _size = _data.size();
 }
+
+/****************** COMMENTS ABOUT THE MAXIMUM DEPTH VALUE ******************
+*                                                                           *
+*   Originally I had a value of -1 to represent a tree with infinite        *
+*   depth, but i switched to a seemingly random value of 2,147,483,647      *
+*                                                                           *
+*   This value is not random, it's 2^17 - 1, AKA the maximum signed int     *
+*   value on a 32 bits architecture. The reason i switched from -1 to       *
+*   that value is that it's unlikely that a tree will ever reach a          *
+*   depth of 2^17 - 1, so it allows me to save a comparison for every       *
+*   insertion.                                                              *
+*                                                                           *
+*                                                                           *
+*   Let's calculate the memory size of a QuadTree with that depth.          *
+*   A QuadTree of depth n possesses (4^(n+1)-1)/3 nodes                     *
+*   with n = 2^17-1, that is (4^((2^17+1)-1)-1)/3 so (2^(2^18)-1)/3         *
+*   which gives (2^262144-1)/3 nodes                                        *
+*                                                                           *
+*   For the rest of this study we will assume a 32bits architecture         *
+*   with the following sizes :                                              *
+*       - char      : 1B                                                    *
+*       - void*     : 4B                                                    *
+*       - size_t    : 4B                                                    *
+*       - int       : 4B                                                    *
+*       - float     : 4B                                                    *
+*       - std::list : (void*)*2 for pointers and size_t for size            *
+*                       each element is (void*)*2 + sizeof(data)            *
+*                                                                           *
+*   Let's suppose we work we a QuadTree defined as :                        *
+*       QuadTree<char, char, N> with a capacity of 1                        *
+*   And the node data is defined as :                                       *
+*       Node<char, char>                                                    *
+*   For the tree to make new childs it needs to be full, so every tree      *
+*   stores exactly 1 Node element                                           *
+*   We omit the cost of storing any function for this calcul                *
+*                                                                           *
+*   Every Node structure takes 2B                                           *
+*                                                                           *
+*   Each QuadTree element takes the following space :                       *
+*       - size_t : 4B                                                       *
+*       - sf::Rect<float>: 4*float so 16B                                   *
+*       - std::list<int> : with 1 element, 4*2+4 + 4*2+2, so 22B            *
+*                           so a size of 24B with alignment                 *
+*       - QuadTree*      : 4B                                               *
+*       - size_t         : 4B                                               *
+*       - int            : 4B                                               *
+*   Each QuadTree element takes a total of 52B                              *
+*                                                                           *
+*   Each QuadTree also needs to allocate a QuadTreeChild structure          *
+*   which stores 4 QuadTrees for a total of 4*52 = 208B                     *
+*                                                                           *
+*   So every QuadTree node takes 52 + 208 = 260B                            *
+*                                                                           *
+*   We have a total of (2^262144-1)/3 * 260 bytes of data for               *
+*   a full tree.                                                            *
+*                                                                           *
+*   1TiB of data is 2^40B so we can simplify the above expression           *
+*   if we drop the -1 that is insignificant at this point, and              *
+*   we approximate that 260 = 256+4 ~ 256 = 2^8                             *
+*                                                                           *
+*   Which gives us 2^(262144+8)/3 so a total of 2^262152/3 B                *
+*   This is about 10^78900 B of data                                        *
+*                                                                           *
+*   As a comparison, the universe has an estimated 10^25 stars              *
+*                                                                           *
+*   So as far as memory is concerned, using a maximum depth of              *
+*   2^17-1 makes the tree close to infinite.                                *
+*                                                                           *
+****************************************************************************/

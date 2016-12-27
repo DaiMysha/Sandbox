@@ -27,6 +27,7 @@ to your specifications
 
 **/
 
+//note : move capacity as a member
 template <size_t CAPACITY, typename T, typename P, typename N>
 class QuadTree
 {
@@ -37,8 +38,9 @@ class QuadTree
         QuadTree(QuadTree&& other) = default;
         QuadTree& operator=(QuadTree&& other) = default;
 
-        QuadTree(float width, float height, int maximumDepth = -1);
-        QuadTree(float left, float top, float width, float height, int maximumDepth = -1);
+                                            // explanations about this value at the end of the .tpl file
+        QuadTree(float width, float height, int maximumDepth = 2147483647);
+        QuadTree(float left, float top, float width, float height, int maximumDepth = 2147483647);
         ~QuadTree();
 
         void insert(const P& item, const T& data);
@@ -61,7 +63,7 @@ class QuadTree
         size_t depth();
 
     protected:
-        void _subdivide(int newDepth = -1);
+        void _subdivide(int newDepth);
         inline void _insert(const P& position, const T& item);
         inline void _query(float x, float y, float width, float height, std::list<T>& res) const;
         inline void _getData(std::list<T>& ans) const;
@@ -77,6 +79,7 @@ class QuadTree
         QuadTreeChild* _children;
         size_t _size; //represents the size of the current tree and all the trees under it
         int _maximumDepth;
+        size_t store;
 };
 
 #include "QuadTree.tpl"
