@@ -266,7 +266,7 @@ void QuadTree<CAPACITY, T, P, N>::_insert(const P& position, const T& item)
     if(_data.size() > CAPACITY)
     {
         //originally i had a value of -1 to represent infinite trees, but see bottom for remarks about that
-        if(_maximumDepth > 0)
+        if(_maximumDepth > 1)
         {
             _subdivide(_maximumDepth - 1);
         }

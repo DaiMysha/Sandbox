@@ -35,9 +35,6 @@ class QuadTree
         QuadTree(const QuadTree& other) = delete;
         QuadTree& operator=(const QuadTree& other) = delete;
 
-        QuadTree(QuadTree&& other) = default;
-        QuadTree& operator=(QuadTree&& other) = default;
-
                                             // explanations about this value at the end of the .tpl file
         QuadTree(float width, float height, int maximumDepth = 2147483647);
         QuadTree(float left, float top, float width, float height, int maximumDepth = 2147483647);
