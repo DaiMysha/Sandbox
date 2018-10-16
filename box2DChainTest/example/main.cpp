@@ -83,6 +83,17 @@ class DebugDraw : public b2Draw
 
   };
 
+void applyFriction(b2Body* body, float32 friction)
+{
+    b2Vec2 vel = body->GetLinearVelocity();
+    if (vel.Length())
+    {
+        vel.Normalize();
+        vel *= -1 * friction;
+        body->ApplyForceToCenter(vel, true);
+    }
+}
+
 //font taken from http://www.fontspace.com/melifonts/sweet-cheeks
 int main(int argc, char** argv)
 {
@@ -90,9 +101,11 @@ int main(int argc, char** argv)
 
     sf::RenderWindow window(sf::VideoMode(WIDTH, HEIGHT), "Box2D test");
 
-    b2Vec2 newton(0.0f, 9.80f);
+    b2Vec2 newton(0.0f, 5000);
 
     b2World world(newton);
+
+    float friction = 10000000.f;
 
     float32 timeStep = 1.0f / 50.0f;
 
@@ -109,13 +122,16 @@ int main(int argc, char** argv)
 
     b2FixtureDef boxFixtureDef;
     boxFixtureDef.shape = &boxShape;
-    boxFixtureDef.density = 1;
+    boxFixtureDef.density = 10;
 
     b2Body* dynamicBody = world.CreateBody(&myBodyDef);
     dynamicBody->CreateFixture(&boxFixtureDef);
 
     b2Body* dynamicBody2 = world.CreateBody(&myBodyDef);
     dynamicBody2->CreateFixture(&boxFixtureDef);
+
+    b2Body* dynamicBody3 = world.CreateBody(&myBodyDef);
+    dynamicBody3->CreateFixture(&boxFixtureDef);
 
     b2BodyDef circleBodyDef;
     circleBodyDef.type = b2_staticBody; //this will be a dynamic body
@@ -134,14 +150,18 @@ int main(int argc, char** argv)
     rjDef.collideConnected = false;
     rjDef.bodyA = staticCircle;
     rjDef.bodyB = dynamicBody;
+    rjDef.referenceAngle = 180*DEGTORAD;
     rjDef.localAnchorA = {0, 0};
     rjDef.localAnchorB = {40,0};
     b2Joint* rj = (b2RevoluteJoint*)world.CreateJoint(&rjDef);
 
+    rjDef.localAnchorA = {-40,0};
     rjDef.bodyA = dynamicBody;
     rjDef.bodyB = dynamicBody2;
-    rjDef.localAnchorA = {-40,0};
     b2Joint* rj2 = (b2RevoluteJoint*)world.CreateJoint(&rjDef);
+    rjDef.bodyA = dynamicBody2;
+    rjDef.bodyB = dynamicBody3;
+    b2Joint* rj3 = (b2RevoluteJoint*)world.CreateJoint(&rjDef);
 
     DebugDraw dbd(window);
     dbd.SetFlags(b2Draw::e_shapeBit | b2Draw::e_jointBit);
@@ -170,10 +190,38 @@ int main(int argc, char** argv)
                         world.Step(timeStep, velocityIterations, positionIterations);
                         break;
 
+                    case sf::Keyboard::F2:
+                        staticCircle->SetTransform({WIDTH/4, HEIGHT/4}, 0);
+                        break;
+
+                    case sf::Keyboard::F3:
+                        staticCircle->SetTransform({WIDTH*3/4, HEIGHT/4}, 0);
+                        break;
+
+                    case sf::Keyboard::D:
+                        staticCircle->SetTransform(staticCircle->GetPosition() + b2Vec2(10,0), 0);
+                        break;
+
+                    case sf::Keyboard::Q:
+                        staticCircle->SetTransform(staticCircle->GetPosition() + b2Vec2(-10,0), 0);
+                        break;
+
+                    case sf::Keyboard::Z:
+                        staticCircle->SetTransform(staticCircle->GetPosition() + b2Vec2(0,-10), 0);
+                        break;
+
+                    case sf::Keyboard::S:
+                        staticCircle->SetTransform(staticCircle->GetPosition() + b2Vec2(0,10), 0);
+                        break;
+
                     default: break;
                 }
             }
         }
+
+        applyFriction(dynamicBody, friction);
+        applyFriction(dynamicBody2, friction);
+        applyFriction(dynamicBody3, friction);
 
         world.Step(timeStep, velocityIterations, positionIterations);
 
@@ -186,8 +234,10 @@ int main(int argc, char** argv)
 
     world.DestroyJoint(rj);
     world.DestroyJoint(rj2);
+    world.DestroyJoint(rj3);
     world.DestroyBody(staticCircle);
     world.DestroyBody(dynamicBody);
     world.DestroyBody(dynamicBody2);
+    world.DestroyBody(dynamicBody3);
     return 0;
 }
