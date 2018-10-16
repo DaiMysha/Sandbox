@@ -85,6 +85,7 @@ class DebugDraw : public b2Draw
 
 void applyFriction(b2Body* body, float32 friction)
 {
+    return;
     b2Vec2 vel = body->GetLinearVelocity();
     if (vel.Length())
     {
@@ -105,7 +106,7 @@ int main(int argc, char** argv)
 
     b2World world(newton);
 
-    float friction = 10000000.f;
+    float friction = 0.f;
 
     float32 timeStep = 1.0f / 50.0f;
 
@@ -114,6 +115,7 @@ int main(int argc, char** argv)
 
     b2BodyDef myBodyDef;
     myBodyDef.type = b2_dynamicBody; //this will be a dynamic body
+    //myBodyDef.angularDamping = .1;
     myBodyDef.position.Set(50, 20); //set the starting position
     myBodyDef.angle = 0; //set the starting angle
 
@@ -122,7 +124,8 @@ int main(int argc, char** argv)
 
     b2FixtureDef boxFixtureDef;
     boxFixtureDef.shape = &boxShape;
-    boxFixtureDef.density = 10;
+    boxFixtureDef.density = 100;
+    boxFixtureDef.filter.groupIndex = -1;
 
     b2Body* dynamicBody = world.CreateBody(&myBodyDef);
     dynamicBody->CreateFixture(&boxFixtureDef);
@@ -216,6 +219,10 @@ int main(int argc, char** argv)
 
                     default: break;
                 }
+            }
+            else if(event.type == sf::Event::MouseMoved)
+            {
+                staticCircle->SetTransform({event.mouseMove.x, event.mouseMove.y}, 0);
             }
         }
 
