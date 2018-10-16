@@ -25,18 +25,16 @@ class DebugDraw : public b2Draw
     void DrawPolygon(const b2Vec2* vertices, int32 vertexCount, const b2Color& color)
     {
         sf::Color c(color.r, color.g, color.b, color.a);
-        sf::Vertex* vx = new sf::Vertex[vertexCount];
+        sf::Vertex* vx = new sf::Vertex[vertexCount+1];
         for(size_t i = 0; i < vertexCount; ++i)
         {
             vx[i].color = sf::Color::Red;
             vx[i].position.x = vertices[i].x;
             vx[i].position.y = vertices[i].y;
-
-            std::cout << vertices[i].x <<";" << vertices[i].y << ";" << (int)c.b << std::endl;
         }
-        std::cout << std::endl;
+        vx[vertexCount] = vx[0];
 
-        _target.draw(vx, vertexCount, sf::LinesStrip);
+        _target.draw(vx, vertexCount+1, sf::LinesStrip);
 
         delete[] vx;
     }
@@ -48,6 +46,15 @@ class DebugDraw : public b2Draw
 
     void DrawCircle(const b2Vec2& center, float32 radius, const b2Color& color)
     {
+        sf::CircleShape circle;
+        circle.setPosition(center.x, center.y);
+        circle.setOrigin(radius, radius);
+        circle.setRadius(radius);
+        circle.setOutlineColor(sf::Color(100,100,255));
+        circle.setOutlineThickness(1);
+        circle.setFillColor(sf::Color(0,0,0,0));
+
+        _target.draw(circle);
     }
 
     void DrawSolidCircle(const b2Vec2& center, float32 radius, const b2Vec2& axis, const b2Color& color)
@@ -57,6 +64,14 @@ class DebugDraw : public b2Draw
 
     void DrawSegment(const b2Vec2& p1, const b2Vec2& p2, const b2Color& color)
     {
+        sf::Vertex vx[2];
+        vx[0].color = sf::Color::Green;
+        vx[0].position = {p1.x, p1.y};
+
+        vx[1].color = vx[0].color;
+        vx[1].position = {p2.x, p2.y};
+
+        _target.draw(vx, 2, sf::LinesStrip);
     }
 
     void DrawTransform(const b2Transform& xf)
@@ -91,12 +106,27 @@ int main(int argc, char** argv)
 
     b2Body* dynamicBody = world.CreateBody(&myBodyDef);
     b2PolygonShape boxShape;
-    boxShape.SetAsBox(100,100);
+    boxShape.SetAsBox(40,10);
 
     b2FixtureDef boxFixtureDef;
     boxFixtureDef.shape = &boxShape;
     boxFixtureDef.density = 1;
     dynamicBody->CreateFixture(&boxFixtureDef);
+
+
+    b2BodyDef circleBodyDef;
+    circleBodyDef.type = b2_staticBody; //this will be a dynamic body
+    circleBodyDef.position.Set(100, 20); //set the starting position
+    circleBodyDef.angle = 0; //set the starting angle
+    b2Body* staticCircle = world.CreateBody(&circleBodyDef);
+    b2CircleShape circleShape;
+    circleShape.m_radius = 20;
+    circleShape.m_p = {50,20};
+    circleShape.m_type = b2Shape::e_circle;
+    b2FixtureDef circleFixtureDef;
+    circleFixtureDef.shape = &circleShape;
+    circleFixtureDef.density = 1;
+    staticCircle->CreateFixture(&circleFixtureDef);
 
     /*
     b2RevoluteJointDef rjDef;
@@ -144,6 +174,7 @@ int main(int argc, char** argv)
         sf::sleep(sf::milliseconds(16));
     }
 
+    world.DestroyBody(staticCircle);
     world.DestroyBody(dynamicBody);
     //world.DestroyJoint(rj);
     return 0;
