@@ -104,18 +104,22 @@ int main(int argc, char** argv)
     myBodyDef.position.Set(50, 20); //set the starting position
     myBodyDef.angle = 0; //set the starting angle
 
-    b2Body* dynamicBody = world.CreateBody(&myBodyDef);
     b2PolygonShape boxShape;
     boxShape.SetAsBox(40,10);
 
     b2FixtureDef boxFixtureDef;
     boxFixtureDef.shape = &boxShape;
     boxFixtureDef.density = 1;
+
+    b2Body* dynamicBody = world.CreateBody(&myBodyDef);
     dynamicBody->CreateFixture(&boxFixtureDef);
+
+    b2Body* dynamicBody2 = world.CreateBody(&myBodyDef);
+    dynamicBody2->CreateFixture(&boxFixtureDef);
 
     b2BodyDef circleBodyDef;
     circleBodyDef.type = b2_staticBody; //this will be a dynamic body
-    circleBodyDef.position.Set(100, 50); //set the starting position
+    circleBodyDef.position.Set(WIDTH/2, HEIGHT/4); //set the starting position
     circleBodyDef.angle = 0; //set the starting angle
     b2Body* staticCircle = world.CreateBody(&circleBodyDef);
     b2CircleShape circleShape;
@@ -132,8 +136,12 @@ int main(int argc, char** argv)
     rjDef.bodyB = dynamicBody;
     rjDef.localAnchorA = {0, 0};
     rjDef.localAnchorB = {40,0};
-    rjDef.referenceAngle = 180 * DEGTORAD;
     b2Joint* rj = (b2RevoluteJoint*)world.CreateJoint(&rjDef);
+
+    rjDef.bodyA = dynamicBody;
+    rjDef.bodyB = dynamicBody2;
+    rjDef.localAnchorA = {-40,0};
+    b2Joint* rj2 = (b2RevoluteJoint*)world.CreateJoint(&rjDef);
 
     DebugDraw dbd(window);
     dbd.SetFlags(b2Draw::e_shapeBit | b2Draw::e_jointBit);
@@ -177,7 +185,9 @@ int main(int argc, char** argv)
     }
 
     world.DestroyJoint(rj);
+    world.DestroyJoint(rj2);
     world.DestroyBody(staticCircle);
     world.DestroyBody(dynamicBody);
+    world.DestroyBody(dynamicBody2);
     return 0;
 }
