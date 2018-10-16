@@ -115,16 +115,16 @@ int main(int argc, char** argv)
 
     b2BodyDef myBodyDef;
     myBodyDef.type = b2_dynamicBody; //this will be a dynamic body
-    //myBodyDef.angularDamping = .1;
+    myBodyDef.angularDamping = 5;
     myBodyDef.position.Set(50, 20); //set the starting position
     myBodyDef.angle = 0; //set the starting angle
 
     b2PolygonShape boxShape;
-    boxShape.SetAsBox(40,10);
+    boxShape.SetAsBox(20,5);
 
     b2FixtureDef boxFixtureDef;
     boxFixtureDef.shape = &boxShape;
-    boxFixtureDef.density = 100;
+    boxFixtureDef.density = 1;
     boxFixtureDef.filter.groupIndex = -1;
 
     b2Body* dynamicBody = world.CreateBody(&myBodyDef);
@@ -142,7 +142,7 @@ int main(int argc, char** argv)
     circleBodyDef.angle = 0; //set the starting angle
     b2Body* staticCircle = world.CreateBody(&circleBodyDef);
     b2CircleShape circleShape;
-    circleShape.m_radius = 20;
+    circleShape.m_radius = 10;
     circleShape.m_type = b2Shape::e_circle;
     b2FixtureDef circleFixtureDef;
     circleFixtureDef.shape = &circleShape;
@@ -155,16 +155,28 @@ int main(int argc, char** argv)
     rjDef.bodyB = dynamicBody;
     rjDef.referenceAngle = 180*DEGTORAD;
     rjDef.localAnchorA = {0, 0};
-    rjDef.localAnchorB = {40,0};
+    rjDef.localAnchorB = {20,0};
     b2Joint* rj = (b2RevoluteJoint*)world.CreateJoint(&rjDef);
 
-    rjDef.localAnchorA = {-40,0};
+    rjDef.localAnchorA = {-20,0};
     rjDef.bodyA = dynamicBody;
     rjDef.bodyB = dynamicBody2;
     b2Joint* rj2 = (b2RevoluteJoint*)world.CreateJoint(&rjDef);
     rjDef.bodyA = dynamicBody2;
     rjDef.bodyB = dynamicBody3;
     b2Joint* rj3 = (b2RevoluteJoint*)world.CreateJoint(&rjDef);
+
+
+    b2BodyDef groundDef;
+    groundDef.type = b2_staticBody; //this will be a dynamic body
+    groundDef.position.Set(0, HEIGHT - 10); //set the starting position
+    groundDef.angle = 0; //set the starting angle
+    boxShape.SetAsBox(WIDTH,10);
+    b2FixtureDef groundFixture;
+    groundFixture.shape = &boxShape;
+    groundFixture.density = 1;
+    b2Body* ground = world.CreateBody(&groundDef);
+    ground->CreateFixture(&groundFixture);
 
     DebugDraw dbd(window);
     dbd.SetFlags(b2Draw::e_shapeBit | b2Draw::e_jointBit);
@@ -246,5 +258,6 @@ int main(int argc, char** argv)
     world.DestroyBody(dynamicBody);
     world.DestroyBody(dynamicBody2);
     world.DestroyBody(dynamicBody3);
+    world.DestroyBody(ground);
     return 0;
 }
