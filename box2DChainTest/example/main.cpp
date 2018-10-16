@@ -48,8 +48,8 @@ class DebugDraw : public b2Draw
     {
         sf::CircleShape circle;
         circle.setPosition(center.x, center.y);
-        circle.setOrigin(radius, radius);
         circle.setRadius(radius);
+        circle.setOrigin(radius, radius);
         circle.setOutlineColor(sf::Color(100,100,255));
         circle.setOutlineThickness(1);
         circle.setFillColor(sf::Color(0,0,0,0));
@@ -101,7 +101,7 @@ int main(int argc, char** argv)
 
     b2BodyDef myBodyDef;
     myBodyDef.type = b2_dynamicBody; //this will be a dynamic body
-    myBodyDef.position.Set(100, 20); //set the starting position
+    myBodyDef.position.Set(50, 20); //set the starting position
     myBodyDef.angle = 0; //set the starting angle
 
     b2Body* dynamicBody = world.CreateBody(&myBodyDef);
@@ -113,29 +113,27 @@ int main(int argc, char** argv)
     boxFixtureDef.density = 1;
     dynamicBody->CreateFixture(&boxFixtureDef);
 
-
     b2BodyDef circleBodyDef;
     circleBodyDef.type = b2_staticBody; //this will be a dynamic body
-    circleBodyDef.position.Set(100, 20); //set the starting position
+    circleBodyDef.position.Set(100, 50); //set the starting position
     circleBodyDef.angle = 0; //set the starting angle
     b2Body* staticCircle = world.CreateBody(&circleBodyDef);
     b2CircleShape circleShape;
     circleShape.m_radius = 20;
-    circleShape.m_p = {50,20};
     circleShape.m_type = b2Shape::e_circle;
     b2FixtureDef circleFixtureDef;
     circleFixtureDef.shape = &circleShape;
     circleFixtureDef.density = 1;
     staticCircle->CreateFixture(&circleFixtureDef);
 
-    /*
     b2RevoluteJointDef rjDef;
-    rjDef.bodyA = box1._body;
-    rjDef.bodyB = box2._body;
-    rjDef.localAnchorA = b2Vec2(60.0f, 10.0f);
-    rjDef.localAnchorB = b2Vec2(0.0f, 10.0f);
+    rjDef.collideConnected = false;
+    rjDef.bodyA = staticCircle;
+    rjDef.bodyB = dynamicBody;
+    rjDef.localAnchorA = {0, 0};
+    rjDef.localAnchorB = {40,0};
+    rjDef.referenceAngle = 180 * DEGTORAD;
     b2Joint* rj = (b2RevoluteJoint*)world.CreateJoint(&rjDef);
-    */
 
     DebugDraw dbd(window);
     dbd.SetFlags(b2Draw::e_shapeBit | b2Draw::e_jointBit);
@@ -160,6 +158,10 @@ int main(int argc, char** argv)
                         window.close();
                         break;
 
+                    case sf::Keyboard::F1:
+                        world.Step(timeStep, velocityIterations, positionIterations);
+                        break;
+
                     default: break;
                 }
             }
@@ -171,11 +173,11 @@ int main(int argc, char** argv)
         world.DrawDebugData();
         window.display();
 
-        sf::sleep(sf::milliseconds(16));
+        sf::sleep(sf::milliseconds(1000.0f/50.0f));
     }
 
+    world.DestroyJoint(rj);
     world.DestroyBody(staticCircle);
     world.DestroyBody(dynamicBody);
-    //world.DestroyJoint(rj);
     return 0;
 }
