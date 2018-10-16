@@ -4,6 +4,9 @@
 #include <SFML/Graphics.hpp>
 #include <Box2D/Box2D.h>
 
+#define DEGTORAD 0.0174532925199432957f
+#define RADTODEG 57.295779513082320876f
+
 namespace {
 
 const unsigned WIDTH = 640;
@@ -12,185 +15,101 @@ const double PI = 3.14159265359;
 
 } // !namespace
 
-enum Direction { UP, LEFT, DOWN, RIGHT, D_SIZE };
-
-void applyFriction(b2Body* body, float32 friction)
-{
-    b2Vec2 vel = body->GetLinearVelocity();
-    if (vel.Length())
+class DebugDraw : public b2Draw
+  {
+  public:
+    DebugDraw(sf::RenderTarget& tgt) : b2Draw(), _target(tgt)
     {
-        vel.Normalize();
-        vel *= -1 * friction;
-        body->ApplyForceToCenter(vel, true);
     }
-}
 
-class PhysicBox : public sf::Drawable
-{
-    public:
-
-        PhysicBox() : _body(nullptr), _dynamic(true), _speed(2500.0f)
+    void DrawPolygon(const b2Vec2* vertices, int32 vertexCount, const b2Color& color)
+    {
+        sf::Color c(color.r, color.g, color.b, color.a);
+        sf::Vertex* vx = new sf::Vertex[vertexCount];
+        for(size_t i = 0; i < vertexCount; ++i)
         {
-            for (int i = 0; i < 4; ++i)
-            {
-                _directions[i] = false;
-            }
+            vx[i].color = sf::Color::Red;
+            vx[i].position.x = vertices[i].x;
+            vx[i].position.y = vertices[i].y;
+
+            std::cout << vertices[i].x <<";" << vertices[i].y << ";" << (int)c.b << std::endl;
         }
+        std::cout << std::endl;
 
-        void initBox(const sf::Vector2f& position, const sf::Vector2f& halfSize)
-        {
-            _bodyDef.position.Set(position.x, position.y);
+        _target.draw(vx, vertexCount, sf::LinesStrip);
 
-            _bodyShape.SetAsBox(halfSize.x, halfSize.y);
+        delete[] vx;
+    }
 
-            _bodyVisual.setSize(halfSize * 2.0f);
-            _bodyVisual.setOrigin(halfSize);
-            _bodyVisual.setPosition(position);
-        }
+    void DrawSolidPolygon(const b2Vec2* vertices, int32 vertexCount, const b2Color& color)
+    {
+        DrawPolygon(vertices, vertexCount, color);
+    }
 
-        void initPhysics(b2World& world, float density, float friction)
-        {
-            if (_dynamic)
-            {
-                _bodyDef.type = b2_dynamicBody;
-            }
-            else
-            {
-                _bodyDef.type = b2_staticBody;
-            }
-            //_bodyDef.fixedRotation = true;
+    void DrawCircle(const b2Vec2& center, float32 radius, const b2Color& color)
+    {
+    }
 
-            if (_body)
-            {
-                world.DestroyBody(_body);
-            }
-            _body = world.CreateBody(&_bodyDef);
+    void DrawSolidCircle(const b2Vec2& center, float32 radius, const b2Vec2& axis, const b2Color& color)
+    {
+        DrawCircle(center, radius, color);
+    }
 
-            if (_dynamic)
-            {
-                _fixture.density = density;
-                _fixture.friction = friction;
-                _fixture.restitution = 0.8f;
-                _fixture.shape = &_bodyShape;
-                _body->CreateFixture(&_fixture);
-            }
-            else
-            {
-                _body->CreateFixture(&_bodyShape, 0.0f);
-            }
-        }
+    void DrawSegment(const b2Vec2& p1, const b2Vec2& p2, const b2Color& color)
+    {
+    }
 
-        void update()
-        {
-            if (!_body) return;
-            b2Vec2 position = _body->GetPosition();
-            float32 angle = _body->GetAngle() * 180.0f / PI*1.0f;
+    void DrawTransform(const b2Transform& xf)
+    {
+    }
 
-            _bodyVisual.setRotation(angle);
-            _bodyVisual.setPosition(position.x, position.y);
-        }
+    private:
+        sf::RenderTarget& _target;
 
-        void setColor(const sf::Color& c)
-        {
-            _bodyVisual.setFillColor(c);
-        }
-
-        void applyForces(float32 friction)
-        {
-            b2Vec2 forces(0.0f, 0.0f);
-            if (_directions[UP])
-            {
-                forces.y = -1.0f;
-            }
-            if (_directions[DOWN])
-            {
-                forces.y = 1.0f;
-            }
-            if (_directions[LEFT])
-            {
-                forces.x = -1.0f;
-            }
-            if (_directions[RIGHT])
-            {
-                forces.x = 1.0f;
-            }
-            forces *= _speed;
-
-            std::cout << "forces : " << forces.x << ";" << forces.y << std::endl;
-
-            _body->ApplyForceToCenter(forces, false);
-            applyFriction(_body, friction);
-        }
-
-        b2Body* _body;
-        sf::RectangleShape _bodyVisual;
-        bool _dynamic;
-        float _speed;
-        bool _directions[D_SIZE];
-
-    protected:
-        virtual void draw(sf::RenderTarget& target, sf::RenderStates states) const
-        {
-            target.draw(_bodyVisual, states);
-        }
-
-        b2BodyDef _bodyDef;
-        b2PolygonShape _bodyShape;
-        b2FixtureDef _fixture;
-};
+  };
 
 //font taken from http://www.fontspace.com/melifonts/sweet-cheeks
 int main(int argc, char** argv)
 {
-
     /** SFML STUFF **/
 
     sf::RenderWindow window(sf::VideoMode(WIDTH, HEIGHT), "Box2D test");
 
-    b2Vec2 newton(0.0f, 0.0f);
+    b2Vec2 newton(0.0f, 9.80f);
 
     b2World world(newton);
 
-    float32 timeStep = 1.0f / 60.0f;
+    float32 timeStep = 1.0f / 50.0f;
 
-    int32 velocityIterations = 6;
-    int32 positionIterations = 2;
+    int32 velocityIterations = 8;
+    int32 positionIterations = 3;
 
-    /*PhysicBox ground;
-    ground._dynamic = false;
-    ground.setColor({ 185, 122, 87 });
-    ground.initBox({ WIDTH / 2.0f, HEIGHT - 50.0f }, { 100.0f, 10.0f });
-    ground.initPhysics(world, 0.0f, 0.0f);*/
+    b2BodyDef myBodyDef;
+    myBodyDef.type = b2_dynamicBody; //this will be a dynamic body
+    myBodyDef.position.Set(100, 20); //set the starting position
+    myBodyDef.angle = 0; //set the starting angle
 
-    PhysicBox borders[4];
-    borders[0].initBox({ WIDTH / 2.0f, 0.0f }, { WIDTH / 2.0f, 10.0f });
-    borders[1].initBox({ WIDTH, HEIGHT / 2.0f }, { 10.0f, HEIGHT / 2.0f });
-    borders[2].initBox({ WIDTH / 2.0f, HEIGHT }, { WIDTH / 2.0f, 10.0f });
-    borders[3].initBox({ 0.0f, HEIGHT / 2.0f }, { 10.0f, HEIGHT / 2.0f });
-    for (int i = 0; i < 4; ++i)
-    {
-        borders[i]._dynamic = false;
-        borders[i].setColor({ 185, 122, 87 });
-        borders[i].initPhysics(world, 0.0f, 0.0f);
-    }
+    b2Body* dynamicBody = world.CreateBody(&myBodyDef);
+    b2PolygonShape boxShape;
+    boxShape.SetAsBox(100,100);
 
-    PhysicBox box1;
-    box1.setColor(sf::Color::Red);
-    box1.initBox({ WIDTH / 2.0f, 50.0f }, { 30.0f, 10.0f });
-    box1.initPhysics(world, 0.1f, 0.3f);
-    //box1._body->SetAngularVelocity(3.14159f);
-    //box1._body->SetLinearVelocity({ 10.0f, 5.0f });
-    //box1._body->ApplyLinearImpulseToCenter({ 0.0f, 50000.0f }, true);
+    b2FixtureDef boxFixtureDef;
+    boxFixtureDef.shape = &boxShape;
+    boxFixtureDef.density = 1;
+    dynamicBody->CreateFixture(&boxFixtureDef);
 
-    PhysicBox box2;
-    box2.setColor(sf::Color::Green);
-    box2.initBox({ WIDTH / 2.0f - 150, 100.0f }, { 25.0f, 25.0f });
-    box2.initPhysics(world, 0.1f, 0.3);
-    //box2._body->SetAngularVelocity(3.14159f);
-    //box2._body->SetLinearVelocity({ 100.0f, -50.0f });
-    //box2._body->ApplyLinearImpulseToCenter({ 50000.0f, 0.0f }, true);
+    /*
+    b2RevoluteJointDef rjDef;
+    rjDef.bodyA = box1._body;
+    rjDef.bodyB = box2._body;
+    rjDef.localAnchorA = b2Vec2(60.0f, 10.0f);
+    rjDef.localAnchorB = b2Vec2(0.0f, 10.0f);
+    b2Joint* rj = (b2RevoluteJoint*)world.CreateJoint(&rjDef);
+    */
 
-    float32 friction = 1000.0f;
+    DebugDraw dbd(window);
+    dbd.SetFlags(b2Draw::e_shapeBit | b2Draw::e_jointBit);
+    world.SetDebugDraw(&dbd);
 
     //the loop
     while (window.isOpen())
@@ -210,58 +129,22 @@ int main(int argc, char** argv)
                     case sf::Keyboard::Escape:
                         window.close();
                         break;
-                    case sf::Keyboard::Z:
-                        //box1._body->ApplyLinearImpulseToCenter(b2Vec2(0.0f, -500.0f), true);
-                        box1._directions[UP] = down;
-                        break;
-                    case sf::Keyboard::S:
-                        //box1._body->ApplyLinearImpulseToCenter(b2Vec2(0.0f, 500.0f), true);
-                        box1._directions[DOWN] = down;
-                        break;
-                    case sf::Keyboard::Q:
-                        //box1._body->ApplyLinearImpulseToCenter(b2Vec2(-500.0f, 0.0f), true);
-                        box1._directions[LEFT] = down;
-                        break;
-                    case sf::Keyboard::D:
-                        //box1._body->ApplyLinearImpulseToCenter(b2Vec2(500.0f, 0.0f), true);
-                        box1._directions[RIGHT] = down;
-                        break;
-                    case sf::Keyboard::Up:
-                        box2._body->ApplyLinearImpulse(b2Vec2(0.0f, -500.0f), box2._body->GetWorldCenter(), true);
-                        break;
-                    case sf::Keyboard::Down:
-                        box2._body->ApplyLinearImpulse(b2Vec2(0.0f, 500.0f), box2._body->GetWorldCenter(), true);
-                        break;
-                    case sf::Keyboard::Left:
-                        box2._body->ApplyLinearImpulse(b2Vec2(-500.0f, 0.0f), box2._body->GetWorldCenter(), true);
-                        break;
-                    case sf::Keyboard::Right:
-                        box2._body->ApplyLinearImpulse(b2Vec2(500.0f, 0.0f), box2._body->GetWorldCenter(), true);
-                        break;
+
                     default: break;
                 }
             }
         }
 
-        //apply friction
-        box1.applyForces(friction);
-        box2.applyForces(friction);
-
         world.Step(timeStep, velocityIterations, positionIterations);
 
-        box1.update();
-        box2.update();
-
-        window.clear({ 127, 127, 127 });
-        //window.draw(ground);
-        for (int i = 0; i < 4; ++i) window.draw(borders[i]);
-        window.draw(box1);
-        window.draw(box2);
+        window.clear();
+        world.DrawDebugData();
         window.display();
 
         sf::sleep(sf::milliseconds(16));
     }
 
-
+    world.DestroyBody(dynamicBody);
+    //world.DestroyJoint(rj);
     return 0;
 }
