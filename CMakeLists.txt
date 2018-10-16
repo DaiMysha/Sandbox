@@ -20,12 +20,17 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules;${CMAKE_SOURCE_DIR}")
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules;${CMAKE_SOURCE_DIR}")
 
 set_option(BUILD_BOX2DTEST FALSE BOOL "box2D test project")
+set_option(BUILD_BOX2DCHAINTEST FALSE BOOL "box2D chain test project")
 set_option(BUILD_SAT FALSE BOOL "SAT implementation for SFML")
 set_option(BUILD_POLYGONINCLUSION FALSE BOOL "test algorithm to know if a point is inside a convex polygon for SFML")
 
 # add the subdirectories
 if(BUILD_BOX2DTEST)
 	add_subdirectory(boxTest)
+endif()
+
+if(BUILD_BOX2DCHAINTEST)
+	add_subdirectory(box2DChainTest)
 endif()
 
 if(BUILD_SAT)
